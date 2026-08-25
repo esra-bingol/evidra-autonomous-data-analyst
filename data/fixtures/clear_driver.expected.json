@@ -1,0 +1,39 @@
+{
+  "dataset_id": "clear_driver",
+  "period": {
+    "previous": {
+      "start": "2024-01-01",
+      "end": "2024-01-31",
+      "grain": "month"
+    },
+    "current": {
+      "start": "2024-02-01",
+      "end": "2024-02-29",
+      "grain": "month"
+    }
+  },
+  "totals": {
+    "sales_previous": 14000.0,
+    "sales_current": 11484.91,
+    "sales_change_pct": -17.96,
+    "orders_previous": 70,
+    "orders_current": 70,
+    "aov_previous": 200.0,
+    "aov_current": 164.07,
+    "aov_change_pct": -17.96
+  },
+  "decision": "primary_driver",
+  "primary_driver": "West \u00d7 Office Supplies",
+  "driver_region": "West",
+  "driver_category": "Office Supplies",
+  "driver_share_of_drop_pct": 95.4,
+  "sales_change_pct_band": [
+    -22.0,
+    -12.0
+  ],
+  "forbidden_claims": [
+    "volume_only_driver",
+    "causal_language",
+    "abstain"
+  ]
+}

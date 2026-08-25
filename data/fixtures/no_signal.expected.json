@@ -1,0 +1,36 @@
+{
+  "dataset_id": "no_signal",
+  "period": {
+    "previous": {
+      "start": "2024-01-01",
+      "end": "2024-01-31",
+      "grain": "month"
+    },
+    "current": {
+      "start": "2024-02-01",
+      "end": "2024-02-29",
+      "grain": "month"
+    }
+  },
+  "totals": {
+    "sales_previous": 4797.64,
+    "sales_current": 4798.51,
+    "sales_change_pct": 0.02,
+    "orders_previous": 48,
+    "orders_current": 48,
+    "aov_previous": 99.95,
+    "aov_current": 99.97,
+    "aov_change_pct": 0.02
+  },
+  "decision": "abstain",
+  "primary_driver": null,
+  "strength": "inconclusive",
+  "sales_change_pct_band": [
+    -5.0,
+    5.0
+  ],
+  "forbidden_claims": [
+    "named_region_or_category_driver",
+    "causal_language"
+  ]
+}

@@ -1,0 +1,139 @@
+# Superstore column roles (source: data/raw/superstore.csv, not committed)
+# Names are as in this file. The engine must bind by role/semantic, not by hard-coded strings.
+
+dataset_id: superstore
+source_path: data/raw/superstore.csv
+encoding: latin-1
+n_rows: 9994
+n_cols: 21
+order_date_range: [2014-01-03, 2017-12-30]
+grain: line_item  # Order ID is not unique; one order can have multiple products
+
+columns:
+  - name: Row ID
+    role: ignore
+    semantic: row_index
+    dtype: int
+    nullable: false
+  - name: Order ID
+    role: id
+    semantic: order
+    dtype: string
+    nullable: false
+  - name: Order Date
+    role: time
+    semantic: order_date
+    dtype: date  # %m/%d/%Y
+    nullable: false
+  - name: Ship Date
+    role: time
+    semantic: ship_date
+    dtype: date  # %m/%d/%Y
+    nullable: false
+    notes: Not Olist-style customer delivery. delivery_analysis remains false.
+  - name: Ship Mode
+    role: dimension
+    semantic: ship_mode
+    dtype: string
+    nullable: false
+  - name: Customer ID
+    role: id
+    semantic: customer
+    dtype: string
+    nullable: false
+  - name: Customer Name
+    role: ignore
+    semantic: customer_name
+    dtype: string
+    nullable: false
+  - name: Segment
+    role: dimension
+    semantic: segment
+    dtype: string
+    nullable: false
+  - name: Country
+    role: ignore
+    semantic: country
+    dtype: string
+    nullable: false
+    notes: Constant "United States"; no segmentation value.
+  - name: City
+    role: dimension
+    semantic: city
+    dtype: string
+    nullable: false
+  - name: State
+    role: dimension
+    semantic: state
+    dtype: string
+    nullable: false
+  - name: Postal Code
+    role: ignore
+    semantic: postal_code
+    dtype: int
+    nullable: false
+  - name: Region
+    role: dimension
+    semantic: region
+    dtype: string
+    nullable: false
+  - name: Product ID
+    role: id
+    semantic: product
+    dtype: string
+    nullable: false
+  - name: Category
+    role: dimension
+    semantic: product
+    dtype: string
+    nullable: false
+  - name: Sub-Category
+    role: dimension
+    semantic: product
+    dtype: string
+    nullable: false
+  - name: Product Name
+    role: ignore
+    semantic: product_name
+    dtype: string
+    nullable: false
+  - name: Sales
+    role: metric
+    semantic: sales
+    dtype: float
+    nullable: false
+  - name: Quantity
+    role: metric
+    semantic: quantity
+    dtype: int
+    nullable: false
+  - name: Discount
+    role: metric
+    semantic: discount
+    dtype: float
+    nullable: false
+  - name: Profit
+    role: metric
+    semantic: profit
+    dtype: float
+    nullable: false
+
+capabilities:
+  temporal_analysis: true
+  segmentation: true
+  metric_comparison: true
+  volume_value_decomposition: true
+  interaction: true
+  anomaly_detection: true
+  association: true
+  causal_analysis: false
+  multi_table_join: false
+  delivery_analysis: false
+  retention_analysis: false
+
+quality_notes:
+  missing_cells: 0
+  full_row_duplicates: 0
+  unique_order_id: 5009
+  unique_customer_id: 793
+  country_cardinality: 1

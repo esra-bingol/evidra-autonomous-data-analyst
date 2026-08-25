@@ -1,0 +1,33 @@
+{
+  "dataset_id": "missingness",
+  "period": {
+    "previous": {
+      "start": "2024-01-01",
+      "end": "2024-01-31",
+      "grain": "month"
+    },
+    "current": {
+      "start": "2024-02-01",
+      "end": "2024-02-29",
+      "grain": "month"
+    }
+  },
+  "totals": {
+    "sales_previous": 6200.0,
+    "sales_current": 3600.0,
+    "sales_change_pct": -41.94,
+    "orders_previous": 62,
+    "orders_current": 36,
+    "aov_previous": 100.0,
+    "aov_current": 100.0,
+    "aov_change_pct": 0.0
+  },
+  "decision": "data_artefact",
+  "primary_driver": null,
+  "artefact": "truncated_current_period",
+  "current_last_observed_date": "2024-02-18",
+  "forbidden_claims": [
+    "business_segment_driver",
+    "causal_language"
+  ]
+}

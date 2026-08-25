@@ -1,0 +1,4 @@
+from analysis.investigate import main
+
+if __name__ == "__main__":
+    main()

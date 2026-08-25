@@ -52,13 +52,13 @@ Dönem: `time` kolonundan son tam dönem vs önceki (ay varsayılan; veri kısay
 
 ## Görevler
 
-- [ ] Superstore + dört fixture aynı API (`load_tabular`)
-- [ ] Profiler + kalite + `detect_capabilities`
-- [ ] `compare_periods` / `segment_by` / `decompose_volume_value` fixture beklentileriyle yön tutar
-- [ ] İki boyutlu kırılım (`clear_driver` etkileşimi)
-- [ ] `no_signal` ve `missingness` için “sahte sürücü üretmeme” spot-check
-- [ ] En az 2 grafik JSON (henüz UI yok)
-- [ ] pytest: `clear_driver` sürücü eşleşmesi engine seviyesinde
+- [x] Superstore + dört fixture aynı API (`load_tabular`)
+- [x] Profiler + kalite + `detect_capabilities`
+- [x] `compare_periods` / `segment_by` / `decompose_volume_value` fixture beklentileriyle yön tutar
+- [x] İki boyutlu kırılım (`clear_driver` etkileşimi)
+- [x] `no_signal` ve `missingness` için “sahte sürücü üretmeme” spot-check
+- [x] En az 2 grafik JSON (henüz UI yok)
+- [x] pytest: `clear_driver` sürücü eşleşmesi engine seviyesinde
 
 ---
 

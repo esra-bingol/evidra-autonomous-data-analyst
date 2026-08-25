@@ -1,0 +1,43 @@
+{
+  "dataset_id": "aov_trap",
+  "period": {
+    "previous": {
+      "start": "2024-01-01",
+      "end": "2024-01-31",
+      "grain": "month"
+    },
+    "current": {
+      "start": "2024-02-01",
+      "end": "2024-02-29",
+      "grain": "month"
+    }
+  },
+  "totals": {
+    "sales_previous": 4000.0,
+    "sales_current": 2659.77,
+    "sales_change_pct": -33.51,
+    "orders_previous": 40,
+    "orders_current": 38,
+    "aov_previous": 100.0,
+    "aov_current": 69.99,
+    "aov_change_pct": -30.01
+  },
+  "decision": "value_not_volume",
+  "primary_driver": "AOV",
+  "sales_change_pct_band": [
+    -40.0,
+    -20.0
+  ],
+  "orders_change_pct_band": [
+    -10.0,
+    0.0
+  ],
+  "aov_change_pct_band": [
+    -40.0,
+    -20.0
+  ],
+  "forbidden_claims": [
+    "order_count_as_primary_driver",
+    "causal_language"
+  ]
+}

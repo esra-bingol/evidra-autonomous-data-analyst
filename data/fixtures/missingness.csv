@@ -1,0 +1,99 @@
+order_id,order_date,region,category,customer_id,sales,quantity
+MS-0001,2024-01-01,East,Furniture,C-0001,100.0,1
+MS-0002,2024-01-01,West,Office Supplies,C-0002,100.0,1
+MS-0003,2024-01-02,Central,Technology,C-0003,100.0,1
+MS-0004,2024-01-02,South,Furniture,C-0004,100.0,1
+MS-0005,2024-01-03,East,Office Supplies,C-0005,100.0,1
+MS-0006,2024-01-03,West,Technology,C-0006,100.0,1
+MS-0007,2024-01-04,Central,Furniture,C-0007,100.0,1
+MS-0008,2024-01-04,South,Office Supplies,C-0008,100.0,1
+MS-0009,2024-01-05,East,Technology,C-0009,100.0,1
+MS-0010,2024-01-05,West,Furniture,C-0010,100.0,1
+MS-0011,2024-01-06,Central,Office Supplies,C-0011,100.0,1
+MS-0012,2024-01-06,South,Technology,C-0012,100.0,1
+MS-0013,2024-01-07,East,Furniture,C-0013,100.0,1
+MS-0014,2024-01-07,West,Office Supplies,C-0014,100.0,1
+MS-0015,2024-01-08,Central,Technology,C-0015,100.0,1
+MS-0016,2024-01-08,South,Furniture,C-0016,100.0,1
+MS-0017,2024-01-09,East,Office Supplies,C-0017,100.0,1
+MS-0018,2024-01-09,West,Technology,C-0018,100.0,1
+MS-0019,2024-01-10,Central,Furniture,C-0019,100.0,1
+MS-0020,2024-01-10,South,Office Supplies,C-0020,100.0,1
+MS-0021,2024-01-11,East,Technology,C-0021,100.0,1
+MS-0022,2024-01-11,West,Furniture,C-0022,100.0,1
+MS-0023,2024-01-12,Central,Office Supplies,C-0023,100.0,1
+MS-0024,2024-01-12,South,Technology,C-0024,100.0,1
+MS-0025,2024-01-13,East,Furniture,C-0025,100.0,1
+MS-0026,2024-01-13,West,Office Supplies,C-0026,100.0,1
+MS-0027,2024-01-14,Central,Technology,C-0027,100.0,1
+MS-0028,2024-01-14,South,Furniture,C-0028,100.0,1
+MS-0029,2024-01-15,East,Office Supplies,C-0029,100.0,1
+MS-0030,2024-01-15,West,Technology,C-0030,100.0,1
+MS-0031,2024-01-16,Central,Furniture,C-0031,100.0,1
+MS-0032,2024-01-16,South,Office Supplies,C-0032,100.0,1
+MS-0033,2024-01-17,East,Technology,C-0033,100.0,1
+MS-0034,2024-01-17,West,Furniture,C-0034,100.0,1
+MS-0035,2024-01-18,Central,Office Supplies,C-0035,100.0,1
+MS-0036,2024-01-18,South,Technology,C-0036,100.0,1
+MS-0037,2024-01-19,East,Furniture,C-0037,100.0,1
+MS-0038,2024-01-19,West,Office Supplies,C-0038,100.0,1
+MS-0039,2024-01-20,Central,Technology,C-0039,100.0,1
+MS-0040,2024-01-20,South,Furniture,C-0040,100.0,1
+MS-0041,2024-01-21,East,Office Supplies,C-0041,100.0,1
+MS-0042,2024-01-21,West,Technology,C-0042,100.0,1
+MS-0043,2024-01-22,Central,Furniture,C-0043,100.0,1
+MS-0044,2024-01-22,South,Office Supplies,C-0044,100.0,1
+MS-0045,2024-01-23,East,Technology,C-0045,100.0,1
+MS-0046,2024-01-23,West,Furniture,C-0046,100.0,1
+MS-0047,2024-01-24,Central,Office Supplies,C-0047,100.0,1
+MS-0048,2024-01-24,South,Technology,C-0048,100.0,1
+MS-0049,2024-01-25,East,Furniture,C-0049,100.0,1
+MS-0050,2024-01-25,West,Office Supplies,C-0050,100.0,1
+MS-0051,2024-01-26,Central,Technology,C-0051,100.0,1
+MS-0052,2024-01-26,South,Furniture,C-0052,100.0,1
+MS-0053,2024-01-27,East,Office Supplies,C-0053,100.0,1
+MS-0054,2024-01-27,West,Technology,C-0054,100.0,1
+MS-0055,2024-01-28,Central,Furniture,C-0055,100.0,1
+MS-0056,2024-01-28,South,Office Supplies,C-0056,100.0,1
+MS-0057,2024-01-29,East,Technology,C-0057,100.0,1
+MS-0058,2024-01-29,West,Furniture,C-0058,100.0,1
+MS-0059,2024-01-30,Central,Office Supplies,C-0059,100.0,1
+MS-0060,2024-01-30,South,Technology,C-0060,100.0,1
+MS-0061,2024-01-31,East,Furniture,C-0061,100.0,1
+MS-0062,2024-01-31,West,Office Supplies,C-0062,100.0,1
+MS-0063,2024-02-01,Central,Technology,C-0063,100.0,1
+MS-0064,2024-02-01,South,Furniture,C-0064,100.0,1
+MS-0065,2024-02-02,East,Office Supplies,C-0065,100.0,1
+MS-0066,2024-02-02,West,Technology,C-0066,100.0,1
+MS-0067,2024-02-03,Central,Furniture,C-0067,100.0,1
+MS-0068,2024-02-03,South,Office Supplies,C-0068,100.0,1
+MS-0069,2024-02-04,East,Technology,C-0069,100.0,1
+MS-0070,2024-02-04,West,Furniture,C-0070,100.0,1
+MS-0071,2024-02-05,Central,Office Supplies,C-0071,100.0,1
+MS-0072,2024-02-05,South,Technology,C-0072,100.0,1
+MS-0073,2024-02-06,East,Furniture,C-0073,100.0,1
+MS-0074,2024-02-06,West,Office Supplies,C-0074,100.0,1
+MS-0075,2024-02-07,Central,Technology,C-0075,100.0,1
+MS-0076,2024-02-07,South,Furniture,C-0076,100.0,1
+MS-0077,2024-02-08,East,Office Supplies,C-0077,100.0,1
+MS-0078,2024-02-08,West,Technology,C-0078,100.0,1
+MS-0079,2024-02-09,Central,Furniture,C-0079,100.0,1
+MS-0080,2024-02-09,South,Office Supplies,C-0080,100.0,1
+MS-0081,2024-02-10,East,Technology,C-0081,100.0,1
+MS-0082,2024-02-10,West,Furniture,C-0082,100.0,1
+MS-0083,2024-02-11,Central,Office Supplies,C-0083,100.0,1
+MS-0084,2024-02-11,South,Technology,C-0084,100.0,1
+MS-0085,2024-02-12,East,Furniture,C-0085,100.0,1
+MS-0086,2024-02-12,West,Office Supplies,C-0086,100.0,1
+MS-0087,2024-02-13,Central,Technology,C-0087,100.0,1
+MS-0088,2024-02-13,South,Furniture,C-0088,100.0,1
+MS-0089,2024-02-14,East,Office Supplies,C-0089,100.0,1
+MS-0090,2024-02-14,West,Technology,C-0090,100.0,1
+MS-0091,2024-02-15,Central,Furniture,C-0091,100.0,1
+MS-0092,2024-02-15,South,Office Supplies,C-0092,100.0,1
+MS-0093,2024-02-16,East,Technology,C-0093,100.0,1
+MS-0094,2024-02-16,West,Furniture,C-0094,100.0,1
+MS-0095,2024-02-17,Central,Office Supplies,C-0095,100.0,1
+MS-0096,2024-02-17,South,Technology,C-0096,100.0,1
+MS-0097,2024-02-18,East,Furniture,C-0097,100.0,1
+MS-0098,2024-02-18,West,Office Supplies,C-0098,100.0,1

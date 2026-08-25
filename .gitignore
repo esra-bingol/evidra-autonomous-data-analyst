@@ -1,0 +1,10 @@
+# Ham ve türetilmiş büyük tablolar commit edilmez.
+# Sentetik fixture'lar (data/fixtures/) ve data/README.md git'te durur.
+data/raw/**
+!data/raw/.gitkeep
+data/processed/
+
+__pycache__/
+.pytest_cache/
+*.egg-info/
+.venv/

@@ -64,12 +64,12 @@ Superstore: `data/raw/` + gitignore. `data/README.md`: kaynak, lisans, indirme.
 
 ## Görevler
 
-- [ ] Superstore yerel; lisans/kaynak notu
-- [ ] Satır/kolon, tip, eksik, duplicate özeti
-- [ ] Kolon → rol tablosu
-- [ ] Capability sözlüğü Superstore + sentetik için doldurulmuş
-- [ ] Dört CSV, sabit seed, tekrar üretilebilir
-- [ ] Dört `expected.json`
+- [x] Superstore yerel; lisans/kaynak notu
+- [x] Satır/kolon, tip, eksik, duplicate özeti
+- [x] Kolon → rol tablosu (`configs/schema_roles.yml`)
+- [x] Capability sözlüğü Superstore + sentetik için doldurulmuş
+- [x] Dört CSV, sabit seed, tekrar üretilebilir (`data/generate_fixtures.py`)
+- [x] Dört `expected.json`
 - [ ] Eval aday maddeleri bu fixture’lara bağlanmış (tam matris Aşama 6)
 
 ---
