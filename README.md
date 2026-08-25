@@ -89,8 +89,28 @@ Heuristic policy, no UI:
 
 ```bash
 uv run python -m analysis.eval
-uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py
+uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py tests/test_api.py
 ```
 
 Golden matrix: `evals/golden.json` (~20 items: driver, trap, abstain, interaction, temporal, anomaly, numerical, plus a budget item). Gates are correctness, evidence binding, completeness (`stop_reason`), and forbidden language. Tool counts and latency go to `evals/out/efficiency_log.jsonl` and are **not** a release gate.
+
+---
+
+## Console (Phase 7)
+
+Same investigation graph. No fifth visualization panel. Local, no auth. Port **8765** (not 3000 / 5173 / 8080).
+
+```bash
+uv sync --extra dev
+uv run python -m analysis.api
+```
+
+Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + nested charts and evidence.
+
+API:
+
+- `POST /datasets` — JSON `{ "fixture_id": "clear_driver" }` or multipart file
+- `GET /datasets/{id}` — overview / capabilities
+- `POST /datasets/{id}/analyze` — `{ "question": "..." }`
+- `GET /runs/{id}` — plan, claims, evidence, charts, traces, `stop_reason`
 

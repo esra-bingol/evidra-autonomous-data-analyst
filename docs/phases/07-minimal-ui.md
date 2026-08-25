@@ -42,13 +42,13 @@ Auth yok. Tek kullanıcı, yerel. Portlar: 3000 / 5173 / 8080 dışında.
 
 ## Görevler
 
-- [ ] Upload + fixture seçici
-- [ ] 4 blok bağlama; nested charts
-- [ ] Strength enum görünür; yüzde güven yok
-- [ ] Abstain ve hata halleri kırılmaz
-- [ ] Mobil: alt alta; masaüstü: grid
-- [ ] README: API + UI port
-- [ ] Aşama 6 eval hâlâ yeşil (regresyon)
+- [x] Upload + fixture seçici
+- [x] 4 blok bağlama; nested charts
+- [x] Strength enum görünür; yüzde güven yok
+- [x] Abstain ve hata halleri kırılmaz
+- [x] Mobil: alt alta; masaüstü: grid
+- [x] README: API + UI port
+- [x] Aşama 6 eval hâlâ yeşil (regresyon)
 
 ---
 

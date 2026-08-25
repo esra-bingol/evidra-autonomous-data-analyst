@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Evidra — inceleme konsolu</title>
+    <link rel="stylesheet" href="/static/console.css" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+    <script src="/static/console.js" defer></script>
+  </head>
+  <body>
+    <header class="top">
+      <div>
+        <p class="kicker">Evidra</p>
+        <h1>İnceleme konsolu</h1>
+      </div>
+      <p class="lede">
+        Kapalı hipotez uzayı, kayıtlı tool’lar, evidence kilidi. Chat değil; araştırma yüzeyi.
+        Strength etiketi vardır; yüzde güven üretilmez.
+      </p>
+    </header>
+
+    <p id="banner" class="banner hidden" role="status"></p>
+
+    <main class="grid">
+      <section class="block" id="block-upload">
+        <h2>1 · Dataset</h2>
+        <label for="fixture">Gömülü fixture</label>
+        <div class="row">
+          <select id="fixture"></select>
+          <button type="button" id="btn-fixture">Yükle</button>
+        </div>
+        <label for="file">CSV / Excel yükle</label>
+        <input id="file" type="file" accept=".csv,.txt,.xlsx,.xls" />
+        <p id="dataset-empty" class="empty">Dataset yok. Fixture seçin veya dosya yükleyin.</p>
+        <div id="dataset-meta" class="meta hidden"></div>
+      </section>
+
+      <section class="block" id="block-question">
+        <h2>2 · Soru</h2>
+        <label for="question">İş sorusu</label>
+        <textarea id="question" rows="4" placeholder="Satış neden değişti?"></textarea>
+        <p class="hint">Örnekler (abstain dahil)</p>
+        <div class="chips" id="examples"></div>
+        <button type="button" id="btn-run" disabled>İncelemeyi çalıştır</button>
+        <p id="question-empty" class="empty">Soru yoksa run başlamaz.</p>
+      </section>
+
+      <section class="block" id="block-plan">
+        <h2>3 · Plan</h2>
+        <p id="plan-empty" class="empty">Henüz tool log yok.</p>
+        <p id="plan-loading" class="empty hidden">İnceleme çalışıyor…</p>
+        <table id="plan-table" class="hidden">
+          <thead>
+            <tr>
+              <th>tool</th>
+              <th>durum</th>
+              <th>ms</th>
+              <th>özet</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <p id="plan-steps" class="mono hidden"></p>
+      </section>
+
+      <section class="block" id="block-findings">
+        <h2>4 · Findings + evidence</h2>
+        <p id="findings-empty" class="empty">Claim ve evidence tablosu burada durur.</p>
+        <div id="decision-bar" class="hidden"></div>
+        <div id="claims"></div>
+        <div id="charts"></div>
+        <div class="table-wrap">
+          <table id="evidence-table" class="hidden">
+            <thead>
+              <tr>
+                <th>evidence_id</th>
+                <th>operation</th>
+                <th>strength</th>
+                <th>value</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
