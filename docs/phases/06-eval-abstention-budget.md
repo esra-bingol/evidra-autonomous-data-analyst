@@ -55,12 +55,12 @@ Budget: en az bir testte limitin durduğu ve validator’ın kısmi evidence ile
 
 ## Görevler
 
-- [ ] Golden JSON (~20) + runner
-- [ ] Dört fixture + Superstore ranking/numeric
-- [ ] Abstain maddeleri yeşil
-- [ ] Budget stop testi
-- [ ] Efficiency log dosyası/alanı (gate değil)
-- [ ] README: eval nasıl koşulur (Aşama 6 bitince)
+- [x] Golden JSON (~20) + runner
+- [x] Dört fixture + Superstore ranking/numeric
+- [x] Abstain maddeleri yeşil
+- [x] Budget stop testi
+- [x] Efficiency log dosyası/alanı (gate değil)
+- [x] README: eval nasıl koşulur (Aşama 6 bitince)
 
 ---
 

@@ -121,6 +121,15 @@ def _draft_claims(run: dict[str, Any], wrapped: dict[str, str]) -> list[Claim]:
                 evidence_ids=eids,
             )
         )
+    elif decision == "ranking" and driver and "segment" in wrapped:
+        claims.append(
+            Claim(
+                claim_id="cl-001",
+                text=f"{driver} ranks first among bound segments on the analysis metric.",
+                kind="ranking",
+                evidence_ids=[wrapped["segment"]],
+            )
+        )
     elif decision == "abstain":
         claims.append(
             Claim(

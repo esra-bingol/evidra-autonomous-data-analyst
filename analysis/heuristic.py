@@ -6,11 +6,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from analysis.evidence.log import EvidenceLog
-from analysis.evidence.pipeline import _draft_claims
-from analysis.evidence.validator import accepted_claims, validate_claim
 from analysis.investigate import DRIVER_SHARE_MIN, NOISE_PCT
-from analysis.load import load_tabular
 from analysis.roles import column_with_semantic, columns_with_role
 from analysis.tools.runtime import ToolContext, call_tool
 from analysis.tools.schemas import CLOSED_TEMPLATES, Budget, Hypothesis, StopReason, TemplateId
@@ -32,71 +28,9 @@ def run_heuristic(
     question: str = WHY_CHANGE,
     budget: Budget | None = None,
 ) -> dict[str, Any]:
-    df = load_tabular(path)
-    ctx = ToolContext(df=df, log=EvidenceLog(), budget=budget or Budget())
-    ctx.budget.started_monotonic = time.monotonic()
-    plan: list[str] = []
-    hypotheses: list[Hypothesis] = []
-    stop: StopReason | None = None
-    decision = "abstain"
-    primary_driver = None
+    from analysis.graph import run_investigation
 
-    def step(name: str, **kwargs) -> Any:
-        plan.append(name)
-        return call_tool(ctx, name, **kwargs)
-
-    step("inspect_dataset")
-    step("profile_dataset")
-    caps_res = step("detect_capabilities")
-    roles = caps_res.extra.get("roles") if getattr(caps_res, "ok", False) else []
-    flags = {}
-    cap_ev = next((e for e in ctx.log if e.operation == "detect_capabilities"), None)
-    if cap_ev and isinstance(cap_ev.value, dict):
-        flags = cap_ev.value
-
-    missing = [c for c in required_capabilities(question) if not flags.get(c)]
-    if missing:
-        stop = "abstain"
-        hypotheses = []
-    else:
-        hypotheses = _rank_hypotheses(roles, ctx.budget)
-        ctx.budget.hypotheses_used = len(hypotheses)
-        stop, decision, primary_driver = _experiment_loop(ctx, hypotheses)
-        if decision in {"primary_driver", "value_not_volume"}:
-            step("create_chart", kind="trend")
-            step("create_chart", kind="segment")
-
-    step("generate_report")
-    wrapped = _wrapped_ids(ctx)
-    run = {
-        "decision": decision,
-        "primary_driver": primary_driver,
-        "compare_periods": _payload(ctx, "compare_periods"),
-        "coverage": _payload(ctx, "current_coverage"),
-        "volume_value": _payload(ctx, "decompose_volume_value"),
-        "interaction": _interaction_payload(ctx),
-        "capabilities": _payload(ctx, "detect_capabilities"),
-        "quality": _payload(ctx, "quality_score"),
-    }
-    drafts = _draft_claims(run, wrapped)
-    validated = [validate_claim(c, ctx.log) for c in drafts]
-    claims = accepted_claims(validated, ctx.log)
-    return {
-        "path": str(path),
-        "question": question,
-        "decision": decision,
-        "primary_driver": primary_driver,
-        "stop_reason": stop,
-        "plan": plan,
-        "hypotheses": [h.model_dump() for h in hypotheses],
-        "evidence": [e.model_dump() for e in ctx.log.snapshot()],
-        "claims": [c.model_dump() for c in claims],
-        "charts": [c.model_dump() for c in ctx.charts],
-        "traces": [t.model_dump() for t in ctx.traces],
-        "budget": ctx.budget.model_dump(),
-        "roles": roles,
-        "capabilities": flags,
-    }
+    return run_investigation(path, question, budget=budget, policy="heuristic")
 
 
 def _over_budget(ctx: ToolContext) -> bool:
@@ -108,7 +42,9 @@ def _over_budget(ctx: ToolContext) -> bool:
     return False
 
 
-def _rank_hypotheses(roles: list[dict], budget: Budget) -> list[Hypothesis]:
+def _rank_hypotheses(
+    roles: list[dict], budget: Budget, intent: str = "why_change"
+) -> list[Hypothesis]:
     dims = columns_with_role(roles, "dimension")
     region = column_with_semantic(roles, "region")
     product = next(
@@ -131,6 +67,11 @@ def _rank_hypotheses(roles: list[dict], budget: Budget) -> list[Hypothesis]:
             )
         )
 
+    if intent == "ranking":
+        for dim in dims:
+            add("segment_driver", {"dimension": dim})
+        return ranked[: budget.max_hypotheses]
+
     add("data_artefact")
     add("temporal_change")
     add("volume_vs_value")
@@ -144,37 +85,46 @@ def _rank_hypotheses(roles: list[dict], budget: Budget) -> list[Hypothesis]:
 
 
 def _experiment_loop(
-    ctx: ToolContext, hypotheses: list[Hypothesis]
+    ctx: ToolContext, hypotheses: list[Hypothesis], intent: str = "why_change"
 ) -> tuple[StopReason, str, str | None]:
     decision = "abstain"
     driver = None
     for hyp in hypotheses:
         if _over_budget(ctx):
-            d, drv = _decide(ctx)
+            d, drv = _decide(ctx, intent)
             return "budget", d, drv
         ctx.budget.experiments_used += 1
         result = call_tool(ctx, "test_hypothesis", hypothesis=hyp)
         hyp.status = "tested" if result.ok else "dropped"
-        decision, driver = _decide(ctx)
+        decision, driver = _decide(ctx, intent)
         if decision == "data_artefact":
             return "abstain", decision, driver
         cmp = _last_value(ctx, "compare_periods")
         if (
-            decision == "abstain"
+            intent != "ranking"
+            and decision == "abstain"
             and cmp
             and cmp.get("change_pct") is not None
             and abs(cmp["change_pct"]) <= NOISE_PCT
         ):
             return "abstain", "abstain", None
-        if decision in {"primary_driver", "value_not_volume"}:
+        if decision in {"primary_driver", "value_not_volume", "ranking"}:
             return "strong_evidence", decision, driver
-    decision, driver = _decide(ctx)
+    decision, driver = _decide(ctx, intent)
     if decision == "abstain":
         return "abstain", decision, driver
     return "space_exhausted", decision, driver
 
 
-def _decide(ctx: ToolContext) -> tuple[str, str | None]:
+def _decide(ctx: ToolContext, intent: str = "why_change") -> tuple[str, str | None]:
+    if intent == "ranking":
+        ev = _last_one_dim_segment(ctx)
+        if ev:
+            dims = (ev.filters or {}).get("dimensions") or []
+            rows = (ev.value or {}).get("rows") or []
+            if dims and rows:
+                return "ranking", str(rows[0].get(dims[0]))
+        return "abstain", None
     cov = _last_value(ctx, "current_coverage")
     if cov and cov.get("truncated_current_period"):
         return "data_artefact", None
@@ -204,6 +154,15 @@ def _decide(ctx: ToolContext) -> tuple[str, str | None]:
             if share >= DRIVER_SHARE_MIN and len(dims) == 2:
                 return "primary_driver", f"{top.get(dims[0])} × {top.get(dims[1])}"
     return "abstain", None
+
+
+def _last_one_dim_segment(ctx: ToolContext):
+    items = [
+        e
+        for e in ctx.log
+        if e.operation == "segment_by" and len((e.filters or {}).get("dimensions") or []) == 1
+    ]
+    return items[-1] if items else None
 
 
 def _last_evidence(ctx: ToolContext, operation: str, two_dim: bool = False):
@@ -249,6 +208,9 @@ def _wrapped_ids(ctx: ToolContext) -> dict[str, str]:
     inter = _last_evidence(ctx, "segment_by", two_dim=True)
     if inter:
         wrapped["interaction"] = inter.evidence_id
+    one = _last_one_dim_segment(ctx)
+    if one:
+        wrapped["segment"] = one.evidence_id
     return wrapped
 
 

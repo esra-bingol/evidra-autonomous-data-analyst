@@ -70,3 +70,27 @@ Implementation follows staged work orders with exit criteria. Application code i
 **V1 excludes:** multi-agent topology; RAG / vector search; fine-tuning; PostgreSQL, MLflow, vendor tracing; `run_python` (AST alone is not a sandbox); fake confidence scores; causal verbs in reports; a fifth visualization panel as a core gate; Simpson / outlier / correlation-trap fixtures (backlog); treating Olist as the V1 correctness set.
 
 V1 core is green when **Phase 6** (eval, abstention, budget) passes **without** requiring UI. Phase 7 is a thin console over the same core. Optional sandboxed Python is Phase 8 and may be skipped. Olist is Phase 9.
+
+---
+
+## Setup
+
+Python ≥ 3.11. Install with [uv](https://docs.astral.sh/uv/) (lockfile: `uv.lock`):
+
+```bash
+uv sync --extra dev
+```
+
+---
+
+## Evaluation (V1 core)
+
+Heuristic policy, no UI:
+
+```bash
+uv run python -m analysis.eval
+uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py
+```
+
+Golden matrix: `evals/golden.json` (~20 items: driver, trap, abstain, interaction, temporal, anomaly, numerical, plus a budget item). Gates are correctness, evidence binding, completeness (`stop_reason`), and forbidden language. Tool counts and latency go to `evals/out/efficiency_log.jsonl` and are **not** a release gate.
+

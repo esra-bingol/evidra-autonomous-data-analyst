@@ -56,7 +56,7 @@ class Hypothesis(BaseModel):
     template_id: TemplateId
     bindings: dict[str, Any] = Field(default_factory=dict)
     status: Literal["ranked", "bound", "skipped", "tested", "dropped"] = "ranked"
-    selected_by: Literal["heuristic"] = "heuristic"
+    selected_by: Literal["heuristic", "llm"] = "heuristic"
 
 
 class ToolError(BaseModel):

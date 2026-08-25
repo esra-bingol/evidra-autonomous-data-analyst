@@ -44,12 +44,12 @@ LLM bağlama:
 
 ## Görevler
 
-- [ ] LangGraph state + düğümler (yukarıdaki sıra)
-- [ ] `rank_hypotheses` kapalı set; LLM allowlist
-- [ ] `test_unknown_template_fails`
-- [ ] Sentetik: LLM açık/kapalı aynı `clear_driver` sürücüsü
-- [ ] Intent ranking: hipotez döngüsü kısalır; yine evidence zorunlu
-- [ ] Budget düğümü stop_reason yazar
+- [x] LangGraph state + düğümler (yukarıdaki sıra)
+- [x] `rank_hypotheses` kapalı set; LLM allowlist
+- [x] `test_unknown_template_fails`
+- [x] Sentetik: LLM açık/kapalı aynı `clear_driver` sürücüsü
+- [x] Intent `ranking`: hipotez döngüsü kısalır; yine evidence zorunlu
+- [x] Budget düğümü stop_reason yazar
 
 ---
 

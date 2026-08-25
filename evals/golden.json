@@ -1,0 +1,257 @@
+{
+  "items": [
+    {
+      "id": "ev-d1",
+      "dataset_id": "clear_driver",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["temporal_analysis", "metric_comparison"],
+      "metric_type": "driver",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["cause", "because", "sebep", "root cause"]
+    },
+    {
+      "id": "ev-d2",
+      "dataset_id": "clear_driver",
+      "question": "Why did sales drop?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "driver",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["cause", "because"]
+    },
+    {
+      "id": "ev-d3",
+      "dataset_id": "clear_driver",
+      "question": "What happened to sales?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "driver",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-d4",
+      "dataset_id": "clear_driver",
+      "question": "What drove the sales change?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "driver",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["root cause"]
+    },
+    {
+      "id": "ev-d5",
+      "dataset_id": "clear_driver",
+      "question": "Satışlar neden düştü?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "driver",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["sebep"]
+    },
+    {
+      "id": "ev-t1",
+      "dataset_id": "aov_trap",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "trap",
+      "expected": {
+        "decision": "value_not_volume",
+        "primary_driver": "AOV"
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-t2",
+      "dataset_id": "aov_trap",
+      "question": "Müşteri sayısı mı düştü?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "trap",
+      "expected": {
+        "decision": "value_not_volume",
+        "primary_driver": "AOV"
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-t3",
+      "dataset_id": "aov_trap",
+      "question": "Did order volume drive the sales change?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "trap",
+      "expected": {
+        "decision": "value_not_volume",
+        "primary_driver": "AOV"
+      },
+      "forbidden_language": ["because"]
+    },
+    {
+      "id": "ev-a1",
+      "dataset_id": "no_signal",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "abstain",
+      "expected": {
+        "decision": "abstain",
+        "primary_driver": null,
+        "stop_reason": "abstain"
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-a2",
+      "dataset_id": "clear_driver",
+      "question": "Teslimat gecikmesi puanı nasıl etkiler?",
+      "required_capabilities": ["delivery_analysis"],
+      "metric_type": "abstain",
+      "expected": {
+        "decision": "abstain",
+        "primary_driver": null,
+        "hypotheses_empty": true,
+        "stop_reason": "abstain"
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-a3",
+      "dataset_id": "clear_driver",
+      "question": "Tekrar satın alma ile teslimat ilişkisi nedir?",
+      "required_capabilities": ["retention_analysis"],
+      "metric_type": "abstain",
+      "expected": {
+        "decision": "abstain",
+        "primary_driver": null,
+        "hypotheses_empty": true
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-i1",
+      "dataset_id": "clear_driver",
+      "question": "Bölge ve kategori etkileşimi satış değişimini açıklar mı?",
+      "required_capabilities": ["interaction"],
+      "metric_type": "interaction",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-i2",
+      "dataset_id": "clear_driver",
+      "question": "Is there a region × category association with the sales change?",
+      "required_capabilities": ["interaction"],
+      "metric_type": "interaction",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["because"]
+    },
+    {
+      "id": "ev-i3",
+      "dataset_id": "clear_driver",
+      "question": "Hangi kırılım satış değişimiyle birlikte gidiyor?",
+      "required_capabilities": ["segmentation"],
+      "metric_type": "interaction",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies"
+      },
+      "forbidden_language": ["sebep"]
+    },
+    {
+      "id": "ev-te1",
+      "dataset_id": "clear_driver",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "temporal",
+      "expected": {
+        "change_pct_band": [-22.0, -12.0]
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-te2",
+      "dataset_id": "aov_trap",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "temporal",
+      "expected": {
+        "change_pct_band": [-40.0, -20.0]
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-an1",
+      "dataset_id": "missingness",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "anomaly",
+      "expected": {
+        "decision": "data_artefact",
+        "primary_driver": null
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-an2",
+      "dataset_id": "missingness",
+      "question": "Is the drop a data artefact?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "anomaly",
+      "expected": {
+        "decision": "data_artefact",
+        "primary_driver": null
+      },
+      "forbidden_language": ["root cause"]
+    },
+    {
+      "id": "ev-n1",
+      "dataset_id": "clear_driver",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["metric_comparison"],
+      "metric_type": "numerical",
+      "expected": {
+        "change_pct_band": [-22.0, -12.0]
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-n2",
+      "dataset_id": "superstore",
+      "question": "Hangi bölge en yüksek?",
+      "required_capabilities": ["segmentation"],
+      "metric_type": "numerical",
+      "optional": true,
+      "expected": {
+        "decision": "ranking"
+      },
+      "forbidden_language": ["cause"]
+    },
+    {
+      "id": "ev-b1",
+      "dataset_id": "clear_driver",
+      "question": "Satış neden değişti?",
+      "required_capabilities": ["temporal_analysis"],
+      "metric_type": "abstain",
+      "budget": { "max_experiments": 1, "max_seconds": 60 },
+      "expected": {
+        "stop_reason": "budget"
+      },
+      "forbidden_language": ["cause"]
+    }
+  ]
+}
