@@ -43,6 +43,8 @@ def quality_score(df: pd.DataFrame) -> EngineResult:
         source_columns=list(map(str, df.columns)),
         value={
             "score": score,
+            "kind": "data_quality",
+            "not": "claim_confidence",
             "rule": "100 - min(40, 0.5*missing_cell_pct) - min(30, duplicate_row_pct)",
             "missing": missing,
             "duplicates": dups,

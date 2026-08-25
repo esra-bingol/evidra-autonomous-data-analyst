@@ -10,7 +10,7 @@ from analysis.load import load_tabular
 from analysis.periods import compare_periods, current_coverage, infer_period_windows
 from analysis.profiler import profile_dataset
 from analysis.quality import quality_score
-from analysis.roles import column_with_semantic, columns_with_role, infer_roles
+from analysis.roles import column_with_semantic, columns_with_role
 from analysis.segments import segment_by
 from analysis.visualization import create_visualization
 from analysis.volume_value import decompose_volume_value
@@ -33,8 +33,15 @@ def investigate(path: str | Path) -> dict[str, Any]:
     volume = decompose_volume_value(df, metric=metric, time_col=time_col, windows=windows)
 
     dims = columns_with_role(roles, "dimension")
-    region = next((c for c in dims if "region" in c.lower()), dims[0] if dims else None)
-    category = next((c for c in dims if "categor" in c.lower()), dims[1] if len(dims) > 1 else None)
+    region = column_with_semantic(roles, "region")
+    category = next(
+        (r["name"] for r in roles if r["role"] == "dimension" and r["semantic"] == "product"),
+        None,
+    )
+    if region is None and dims:
+        region = dims[0]
+    if category is None and len(dims) > 1:
+        category = next((d for d in dims if d != region), dims[1])
 
     interaction = None
     if region and category:
@@ -43,17 +50,15 @@ def investigate(path: str | Path) -> dict[str, Any]:
     change_pct = comparison.value["change_pct"]
     decision = "primary_driver"
     primary_driver = None
-    stop = "strong_evidence"
     vol = volume.value
     aov_pct = abs(vol["aov_change_pct"] or 0)
     vol_pct = abs(vol["volume_change_pct"] or 0)
 
+    # Crude Phase 2 rules only: artefact / noise abstain / AOV vs volume / strongest cell.
     if coverage.value["truncated_current_period"]:
         decision = "data_artefact"
-        stop = "abstain"
     elif change_pct is not None and abs(change_pct) <= NOISE_PCT:
         decision = "abstain"
-        stop = "abstain"
     elif aov_pct >= 20 and vol_pct <= 10 and aov_pct > vol_pct:
         decision = "value_not_volume"
         primary_driver = "AOV"
@@ -64,11 +69,9 @@ def investigate(path: str | Path) -> dict[str, Any]:
             primary_driver = f"{top[region]} × {top[category]}"
         else:
             decision = "abstain"
-            stop = "abstain"
             primary_driver = None
     else:
         decision = "abstain"
-        stop = "abstain"
 
     charts = [
         create_visualization(df, kind="trend").to_dict(),
@@ -79,7 +82,6 @@ def investigate(path: str | Path) -> dict[str, Any]:
         "path": str(path),
         "decision": decision,
         "primary_driver": primary_driver,
-        "stop": stop,
         "compare_periods": comparison.to_dict(),
         "coverage": coverage.to_dict(),
         "volume_value": volume.to_dict(),
@@ -98,9 +100,7 @@ def main(argv: list[str] | None = None) -> None:
     slim = {
         "decision": result["decision"],
         "primary_driver": result["primary_driver"],
-        "stop": result["stop"],
         "change_pct": result["compare_periods"]["value"]["change_pct"],
-        "capabilities": result["capabilities"]["value"],
     }
     print(json.dumps(slim, indent=2, ensure_ascii=False))
     if result["primary_driver"]:

@@ -37,13 +37,13 @@ Grafik nesnesi: Plotly JSON + `evidence_ids`. Grafik, sayı kaynağı değildir.
 
 ## Görevler
 
-- [ ] Evidence / Claim modelleri
-- [ ] Engine sarmalayıcı: her operasyon en az bir Evidence üretir
-- [ ] Scorer: pay / ayrışma / kalite kuralları yazılı
-- [ ] `test_no_evidence_no_claim`
-- [ ] `test_causal_verb_rejected`
-- [ ] Chart şemasında `evidence_ids` zorunlu
-- [ ] Append-only: mevcut evidence mutasyonu yok
+- [x] Evidence / Claim modelleri
+- [x] Engine sarmalayıcı: her operasyon en az bir Evidence üretir
+- [x] Scorer: pay / ayrışma / kalite kuralları yazılı
+- [x] `test_no_evidence_no_claim`
+- [x] `test_causal_verb_rejected`
+- [x] Chart şemasında `evidence_ids` zorunlu
+- [x] Append-only: mevcut evidence mutasyonu yok
 
 ---
 
