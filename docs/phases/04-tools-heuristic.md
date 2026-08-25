@@ -34,12 +34,12 @@ Düz Python orkestrasyonu yeter; LangGraph paketi Aşama 5.
 
 ## Görevler
 
-- [ ] Her tool için I/O şeması; çıktı Evidence veya Evidence üreten wrapper
-- [ ] DuckDB: tek tablo register; yalnızca SELECT
-- [ ] Heuristic investigator dört fixture + Superstore abstain örneği
-- [ ] Structured log: ad, süre, başarı, özet
-- [ ] Budget aşıldığında `stop_reason: budget`, crash yok
-- [ ] Hata mesajları: boş kolon, eksik tarih, tek dönem
+- [x] Her tool için I/O şeması; çıktı Evidence veya Evidence üreten wrapper
+- [x] DuckDB: tek tablo `df` register; yalnızca SELECT
+- [x] Heuristic investigator dört fixture + Superstore abstain örneği
+- [x] Structured log: ad, süre, başarı, özet
+- [x] Budget aşıldığında `stop_reason: budget`, crash yok
+- [x] Hata mesajları: boş kolon, eksik tarih, tek dönem
 
 ---
 

@@ -100,16 +100,25 @@ def _draft_claims(run: dict[str, Any], wrapped: dict[str, str]) -> list[Claim]:
         )
     elif decision == "data_artefact" and "coverage" in wrapped:
         last = ((run.get("coverage") or {}).get("value") or {}).get("current_last_observed")
-        text = (
-            f"The apparent sales change ({pct}%) co-occurs with a truncated current period "
-            f"(last observed {last}); treat as a data artefact."
-        )
+        if pct is None:
+            text = (
+                f"Observed truncated current period (last observed {last}); "
+                "treat as a data artefact."
+            )
+        else:
+            text = (
+                f"The apparent sales change ({pct}%) co-occurs with a truncated current period "
+                f"(last observed {last}); treat as a data artefact."
+            )
+        eids = [wrapped["coverage"]]
+        if "compare_periods" in wrapped:
+            eids.append(wrapped["compare_periods"])
         claims.append(
             Claim(
                 claim_id="cl-001",
                 text=text,
                 kind="quality",
-                evidence_ids=[wrapped["coverage"], wrapped["compare_periods"]],
+                evidence_ids=eids,
             )
         )
     elif decision == "abstain":
