@@ -46,14 +46,14 @@ Olist’te **kâr kolonu yoktur.** Margin uydurulmaz; insufficient evidence / ab
 
 ## Görevler
 
-- [ ] `data/README` Olist indirme + tablo haritası
-- [ ] Çok dosya / zip yükleme
-- [ ] DuckDB tüm tablolar; join’li SELECT
-- [ ] Teslimat süresi engine’de
-- [ ] ≥2 join case uçtan uca (CLI veya UI)
-- [ ] Olist rubrik eval
-- [ ] README demo senaryosu Olist
-- [ ] V1 (Aşama 6) eval regresyonu yeşil
+- [x] `data/README` Olist indirme + tablo haritası
+- [x] Çok dosya / zip yükleme
+- [x] DuckDB tüm tablolar; join’li SELECT
+- [x] Teslimat süresi engine’de
+- [x] ≥2 join case uçtan uca (CLI veya UI)
+- [x] Olist rubrik eval
+- [x] README demo senaryosu Olist
+- [x] V1 (Aşama 6) eval regresyonu yeşil
 
 ---
 

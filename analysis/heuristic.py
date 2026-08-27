@@ -16,10 +16,16 @@ WHY_CHANGE = "Satış neden değişti?"
 
 def required_capabilities(question: str) -> set[str]:
     q = question.lower()
+    if any(tok in q for tok in ("kâr", "kar marj", "margin", "profit")):
+        return {"causal_analysis"}
     if any(tok in q for tok in ("teslimat", "delivery", "gecikme", "kargo", "ship delay")):
         return {"delivery_analysis"}
-    if any(tok in q for tok in ("retention", "tekrar satın", "repeat purchase")):
+    if any(tok in q for tok in ("retention", "tekrar satın", "repeat purchase", "tekrar alım")):
         return {"retention_analysis"}
+    if any(tok in q for tok in ("review", "puan", "satisfaction")) and any(
+        tok in q for tok in ("kategori", "category", "ciro", "gmv", "tablo", "join")
+    ):
+        return {"multi_table_join"}
     return {"temporal_analysis", "metric_comparison"}
 
 
@@ -72,6 +78,10 @@ def _rank_hypotheses(
             add("segment_driver", {"dimension": dim})
         return ranked[: budget.max_hypotheses]
 
+    if intent in {"delivery", "retention", "association"}:
+        add("association")
+        return ranked[: budget.max_hypotheses]
+
     add("data_artefact")
     add("temporal_change")
     add("volume_vs_value")
@@ -108,7 +118,7 @@ def _experiment_loop(
             and abs(cmp["change_pct"]) <= NOISE_PCT
         ):
             return "abstain", "abstain", None
-        if decision in {"primary_driver", "value_not_volume", "ranking"}:
+        if decision in {"primary_driver", "value_not_volume", "ranking", "association"}:
             return "strong_evidence", decision, driver
     decision, driver = _decide(ctx, intent)
     if decision == "abstain":
@@ -125,6 +135,12 @@ def _decide(ctx: ToolContext, intent: str = "why_change") -> tuple[str, str | No
             if dims and rows:
                 return "ranking", str(rows[0].get(dims[0]))
         return "abstain", None
+    assoc = _last_value(ctx, "association_test")
+    if intent in {"delivery", "retention", "association"} and assoc:
+        r = assoc.get("r")
+        n = assoc.get("n") or 0
+        if n >= 30 and r is not None and r == r:
+            return "association", None
     cov = _last_value(ctx, "current_coverage")
     if cov and cov.get("truncated_current_period"):
         return "data_artefact", None
@@ -199,6 +215,9 @@ def _wrapped_ids(ctx: ToolContext) -> dict[str, str]:
         "decompose_volume_value": "volume_value",
         "detect_capabilities": "capabilities",
         "quality_score": "quality",
+        "association_test": "association_test",
+        "join_assemble": "join_assemble",
+        "run_sql": "run_sql",
     }
     wrapped: dict[str, str] = {}
     for op, key in mapping.items():

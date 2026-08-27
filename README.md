@@ -109,8 +109,16 @@ Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + n
 
 API:
 
-- `POST /datasets` — JSON `{ "fixture_id": "clear_driver" }` or multipart file
+- `POST /datasets` — JSON `{ "fixture_id": "clear_driver" }` or `{ "fixture_id": "olist" }`, or multipart CSV/Excel/zip
 - `GET /datasets/{id}` — overview / capabilities
 - `POST /datasets/{id}/analyze` — `{ "question": "..." }`
 - `GET /runs/{id}` — plan, claims, evidence, charts, traces, `stop_reason`
+
+Olist (Phase 9, local CSVs in `data/raw/`, not committed). Demo:
+
+```bash
+uv run python -m analysis.graph --data data/raw --question "Teslimat gecikmesi ile review score arasında association var mı?"
+```
+
+Rubric (not a city golden): `evals/olist_rubric.json`. V1 matrix must still pass.
 

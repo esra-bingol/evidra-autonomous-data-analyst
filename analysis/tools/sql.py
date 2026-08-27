@@ -14,8 +14,8 @@ _WRITE = re.compile(
 ROW_LIMIT = 200
 
 
-def run_sql(df: pd.DataFrame, sql: str) -> EngineResult:
-    """DuckDB SELECT only against a single registered table named df."""
+def run_sql(df: pd.DataFrame, sql: str, tables: dict[str, pd.DataFrame] | None = None) -> EngineResult:
+    """DuckDB SELECT only. Registers `df` plus optional named catalog tables."""
     text = sql.strip().rstrip(";")
     if not text:
         raise ValueError("empty SQL")
@@ -29,6 +29,9 @@ def run_sql(df: pd.DataFrame, sql: str) -> EngineResult:
     con = duckdb.connect(database=":memory:")
     try:
         con.register("df", df)
+        for name, frame in (tables or {}).items():
+            if re.fullmatch(r"[a-z_][a-z0-9_]*", name):
+                con.register(name, frame)
         limited = f"SELECT * FROM ({text}) AS _evidra_q LIMIT {ROW_LIMIT}"
         out = con.execute(limited).fetchdf()
     finally:

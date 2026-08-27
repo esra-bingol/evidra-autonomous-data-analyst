@@ -25,6 +25,7 @@ from analysis.tools.schemas import (
     ToolOk,
     Trace,
 )
+from analysis.olist import CATEGORY_SQL
 from analysis.tools.sql import run_sql
 from analysis.visualization import create_visualization
 from analysis.volume_value import decompose_volume_value
@@ -37,10 +38,22 @@ class ToolContext:
     traces: list[Trace] = field(default_factory=list)
     budget: Budget = field(default_factory=Budget)
     charts: list[Chart] = field(default_factory=list)
+    tables: dict[str, pd.DataFrame] = field(default_factory=dict)
+    catalog_meta: dict[str, Any] = field(default_factory=dict)
 
 
-def inspect_dataset(df: pd.DataFrame) -> EngineResult:
+def inspect_dataset(df: pd.DataFrame, tables: dict[str, pd.DataFrame] | None = None) -> EngineResult:
     sample = df.head(5)
+    table_summaries = []
+    for name, frame in (tables or {}).items():
+        table_summaries.append(
+            {
+                "name": name,
+                "n_rows": int(len(frame)),
+                "n_cols": int(frame.shape[1]),
+                "columns": list(map(str, frame.columns)),
+            }
+        )
     return EngineResult(
         operation="inspect_dataset",
         source_columns=list(map(str, df.columns)),
@@ -50,6 +63,8 @@ def inspect_dataset(df: pd.DataFrame) -> EngineResult:
             "columns": list(map(str, df.columns)),
             "dtypes": {c: str(df[c].dtype) for c in df.columns},
             "sample": sample.astype(object).where(sample.notna(), None).to_dict(orient="records"),
+            "tables": table_summaries,
+            "n_tables": len(table_summaries) or 1,
         },
     )
 
@@ -102,15 +117,24 @@ def _dispatch(ctx: ToolContext, name: str, **kwargs: Any) -> tuple[list[str], di
     _guard_frame(ctx.df)
     df = ctx.df
     if name == "inspect_dataset":
-        eid = _append(ctx, inspect_dataset(df))
-        return [eid], {"summary": "inspect"}
+        eid = _append(ctx, inspect_dataset(df, ctx.tables))
+        extra = {"summary": "inspect"}
+        assemble = (ctx.catalog_meta or {}).get("assemble")
+        if assemble:
+            extra_ids = [_append(ctx, assemble)]
+            return [eid, *extra_ids], extra
+        return [eid], extra
     if name == "profile_dataset":
         profile = profile_dataset(df)
         quality = quality_score(df)
         return [_append(ctx, profile), _append(ctx, quality)], {"summary": "profile+quality"}
     if name == "detect_capabilities":
         roles = infer_roles(df)
-        eid = _append(ctx, detect_capabilities(roles))
+        cols = list(map(str, df.columns))
+        for frame in ctx.tables.values():
+            cols.extend(map(str, frame.columns))
+        n_tables = len(ctx.tables) if ctx.tables else 1
+        eid = _append(ctx, detect_capabilities(roles, n_tables=n_tables, available_columns=cols))
         return [eid], {"summary": "capabilities", "roles": roles}
     if name == "compare_periods":
         _require_time(df)
@@ -137,7 +161,7 @@ def _dispatch(ctx: ToolContext, name: str, **kwargs: Any) -> tuple[list[str], di
         eid = _append(ctx, association_test(df, kwargs.get("col_a"), kwargs.get("col_b")))
         return [eid], {"summary": "statistical_test"}
     if name == "run_sql":
-        eid = _append(ctx, run_sql(df, str(kwargs.get("sql") or "")))
+        eid = _append(ctx, run_sql(df, str(kwargs.get("sql") or ""), ctx.tables))
         return [eid], {"summary": "run_sql"}
     if name == "create_chart":
         kind = str(kwargs.get("kind") or "trend")
@@ -179,7 +203,14 @@ def _test_hypothesis(ctx: ToolContext, hyp: Hypothesis) -> tuple[list[str], dict
             raise ValueError("interaction depth exceeds budget")
         return _dispatch(ctx, "segment_by", dimensions=dims)
     if tmpl == "association":
-        return _dispatch(ctx, "statistical_test")
+        bind_a = binds.get("col_a")
+        bind_b = binds.get("col_b")
+        if not bind_a and "delay_days" in ctx.df.columns and "review_score" in ctx.df.columns:
+            bind_a, bind_b = "delay_days", "review_score"
+        eids, extra = _dispatch(ctx, "statistical_test", col_a=bind_a, col_b=bind_b)
+        if ctx.tables:
+            eids = list(eids) + [_append(ctx, run_sql(ctx.df, CATEGORY_SQL, ctx.tables))]
+        return eids, extra
     if tmpl == "data_artefact":
         _require_time(df := ctx.df)
         eids = [_append(ctx, quality_score(df)), _append(ctx, current_coverage(df))]

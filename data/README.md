@@ -65,4 +65,26 @@ Engine **önce** fixture’larda yeşil olur; Superstore ikinci sıradır.
 
 ## Olist
 
-Aşama 9. Şimdi indirme.
+Aşama 9 yapısal benchmark (V1 correctness seti değil). Ham dosyalar **commit edilmez**.
+
+Kaynak: [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce) (Kaggle; lisans/kullanım notunu orada okuyun).
+
+Yerel yol: CSV’leri `data/raw/` altına koyun (`olist_orders_dataset.csv` vb.). `olist_geolocation_dataset.csv` isteğe bağlıdır; engine yüklemez.
+
+| Dosya | Kayıtlı tablo | Join anahtarları |
+| --- | --- | --- |
+| `olist_orders_dataset.csv` | `orders` | `order_id`, `customer_id` |
+| `olist_order_items_dataset.csv` | `order_items` | `order_id`, `product_id`, `seller_id` |
+| `olist_customers_dataset.csv` | `customers` | `customer_id` |
+| `olist_products_dataset.csv` | `products` | `product_id` |
+| `olist_order_payments_dataset.csv` | `payments` | `order_id` |
+| `olist_order_reviews_dataset.csv` | `reviews` | `order_id` |
+| `olist_sellers_dataset.csv` | `sellers` | `seller_id` |
+| `product_category_name_translation.csv` | `category_translation` | kategori adı |
+| `olist_geolocation_dataset.csv` | (yüklenmez) | zip |
+
+Teslimat gecikmesi (`delay_days`) engine’de türetilir; LLM hesabı değildir. Kâr kolonu yoktur; margin uydurulmaz. Ölçüm rubriktir, golden şehir yoktur.
+
+```bash
+uv run python -m analysis.graph --data data/raw --question "Teslimat gecikmesi ile review score arasında association var mı?"
+```

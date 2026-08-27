@@ -1,6 +1,7 @@
 const EXAMPLES = [
   { q: "Satış neden değişti?", label: "driver" },
-  { q: "Teslimat gecikmesi puanı nasıl etkiler?", label: "abstain" },
+  { q: "Teslimat gecikmesi puanı nasıl etkiler?", label: "abstain / Olist" },
+  { q: "Yüksek ciro, düşük puan kategorileri hangileri?", label: "Olist join" },
   { q: "Hangi bölge en yüksek?", label: "ranking" },
 ];
 

@@ -12,7 +12,8 @@ from pydantic import BaseModel, Field
 
 from analysis.capabilities import detect_capabilities
 from analysis.graph import run_investigation
-from analysis.load import load_tabular
+from analysis.load import load_source
+from analysis.olist import is_olist_dir
 from analysis.roles import infer_roles
 from analysis.tools.runtime import inspect_dataset
 
@@ -27,6 +28,7 @@ _FIXTURE_FILES = {
     "no_signal": ROOT / "data" / "fixtures" / "no_signal.csv",
     "missingness": ROOT / "data" / "fixtures" / "missingness.csv",
     "superstore": ROOT / "data" / "raw" / "superstore.csv",
+    "olist": ROOT / "data" / "raw",
 }
 
 _datasets: dict[str, dict[str, Any]] = {}
@@ -49,21 +51,31 @@ class AnalyzeBody(BaseModel):
 def catalog() -> list[dict[str, Any]]:
     rows = []
     for fid, path in _FIXTURE_FILES.items():
+        if fid == "olist":
+            rows.append({"id": fid, "name": fid, "path": str(path), "available": is_olist_dir(path)})
+            continue
         if path.exists():
             rows.append({"id": fid, "name": fid, "path": str(path), "available": True})
-        elif fid == "superstore":
+        elif fid in {"superstore"}:
             rows.append({"id": fid, "name": fid, "path": str(path), "available": False})
     return rows
 
 
 def _overview(path: Path) -> dict[str, Any]:
-    df = load_tabular(path)
-    inspect = inspect_dataset(df).to_dict()["value"]
-    roles = infer_roles(df)
-    caps = detect_capabilities(roles).to_dict()["value"]
+    src = load_source(path)
+    inspect = inspect_dataset(src.df, src.tables).to_dict()["value"]
+    roles = infer_roles(src.df)
+    cols = list(map(str, src.df.columns))
+    for frame in src.tables.values():
+        cols.extend(map(str, frame.columns))
+    caps = detect_capabilities(
+        roles, n_tables=int(src.meta.get("n_tables") or 1), available_columns=cols
+    ).to_dict()["value"]
     return {
         "n_rows": inspect["n_rows"],
         "n_cols": inspect["n_cols"],
+        "n_tables": inspect.get("n_tables") or 1,
+        "tables": inspect.get("tables") or [],
         "columns": inspect["columns"],
         "sample": inspect["sample"],
         "roles": roles,
@@ -92,7 +104,9 @@ def create_app() -> FastAPI:
         if "application/json" in ctype:
             body = FixtureBody.model_validate(await request.json())
             path = _FIXTURE_FILES.get(body.fixture_id)
-            if path is None or not path.exists():
+            if path is None or (body.fixture_id == "olist" and not is_olist_dir(path)):
+                raise HTTPException(404, f"fixture not available: {body.fixture_id}")
+            if path is None or (body.fixture_id != "olist" and not path.exists()):
                 raise HTTPException(404, f"fixture not available: {body.fixture_id}")
             did = _new_id("ds")
             rec = {"id": did, "name": body.fixture_id, "path": str(path), "source": "fixture"}
@@ -103,10 +117,10 @@ def create_app() -> FastAPI:
         upload = form.get("file")
         filename = getattr(upload, "filename", None)
         if not upload or not filename:
-            raise HTTPException(400, "upload a CSV/Excel file or send fixture_id")
+            raise HTTPException(400, "upload a CSV/Excel/zip or send fixture_id")
         suffix = Path(str(filename)).suffix.lower()
-        if suffix not in {".csv", ".txt", ".xlsx", ".xls"}:
-            raise HTTPException(400, "CSV or Excel only")
+        if suffix not in {".csv", ".txt", ".xlsx", ".xls", ".zip"}:
+            raise HTTPException(400, "CSV, Excel, or zip of CSVs only")
         UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         dest = UPLOAD_DIR / f"{uuid.uuid4().hex}{suffix}"
         dest.write_bytes(await upload.read())

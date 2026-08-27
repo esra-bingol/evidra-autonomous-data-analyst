@@ -20,7 +20,7 @@ from analysis.heuristic import (
     _wrapped_ids,
     required_capabilities,
 )
-from analysis.load import load_tabular
+from analysis.load import load_source
 from analysis.policy import apply_llm_rank, detect_intent, silent_llm_fallback
 from analysis.tools.runtime import ToolContext, call_tool
 from analysis.tools.schemas import Budget
@@ -153,6 +153,9 @@ def validate_node(state: GraphState) -> dict:
         "interaction": _interaction_payload(ctx),
         "capabilities": _payload(ctx, "detect_capabilities"),
         "quality": _payload(ctx, "quality_score"),
+        "association_test": _payload(ctx, "association_test"),
+        "join_assemble": _payload(ctx, "join_assemble"),
+        "run_sql": _payload(ctx, "run_sql"),
     }
     drafts = _draft_claims(run, wrapped)
     validated = [validate_claim(c, ctx.log) for c in drafts]
@@ -222,8 +225,14 @@ def run_investigation(
     policy: str = "heuristic",
     llm_rank: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    df = load_tabular(path)
-    ctx = ToolContext(df=df, log=EvidenceLog(), budget=budget or Budget())
+    src = load_source(path)
+    ctx = ToolContext(
+        df=src.df,
+        log=EvidenceLog(),
+        budget=budget or Budget(),
+        tables=src.tables,
+        catalog_meta=src.meta,
+    )
     ctx.budget.started_monotonic = time.monotonic()
     initial: GraphState = {
         "path": str(path),

@@ -13,13 +13,15 @@ def detect_intent(question: str) -> str:
     q = question.lower()
     if any(tok in q for tok in ("teslimat", "delivery", "gecikme", "kargo", "ship delay")):
         return "delivery"
-    if any(tok in q for tok in ("retention", "tekrar satın", "repeat purchase")):
+    if any(tok in q for tok in ("retention", "tekrar satın", "repeat purchase", "tekrar alım")):
         return "retention"
     if any(
         tok in q
         for tok in ("rank", "ranking", "en yüksek", "hangi bölge", "top region", "sırala")
     ):
         return "ranking"
+    if any(tok in q for tok in ("review", "puan", "review score")):
+        return "association"
     return "why_change"
 
 

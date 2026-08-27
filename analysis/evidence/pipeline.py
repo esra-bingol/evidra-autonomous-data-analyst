@@ -130,6 +130,27 @@ def _draft_claims(run: dict[str, Any], wrapped: dict[str, str]) -> list[Claim]:
                 evidence_ids=[wrapped["segment"]],
             )
         )
+    elif decision == "association" and "association_test" in wrapped:
+        assoc = (run.get("association_test") or {}).get("value") or {}
+        r = assoc.get("r")
+        n = assoc.get("n")
+        text = (
+            f"Delivery delay (days) is associated with review score (r={r}, n={n}). "
+            "Association only; not causation."
+        )
+        eids = [wrapped["association_test"]]
+        if "join_assemble" in wrapped:
+            eids.append(wrapped["join_assemble"])
+        if "run_sql" in wrapped:
+            eids.append(wrapped["run_sql"])
+        claims.append(
+            Claim(
+                claim_id="cl-001",
+                text=text,
+                kind="association",
+                evidence_ids=eids,
+            )
+        )
     elif decision == "abstain":
         claims.append(
             Claim(

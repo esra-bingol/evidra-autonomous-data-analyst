@@ -11,10 +11,17 @@ _METRIC_TOKENS = {
     "sales": "sales",
     "revenue": "sales",
     "amount": "sales",
+    "gmv": "sales",
     "profit": "profit",
     "quantity": "quantity",
     "qty": "quantity",
     "discount": "discount",
+    "delay": "delay",
+    "score": "review",
+    "review": "review",
+    "price": "sales",
+    "freight": "freight",
+    "payment": "sales",
 }
 _DIM_TOKENS = {
     "region": "region",
@@ -58,7 +65,7 @@ def infer_roles(df: pd.DataFrame) -> list[dict[str, Any]]:
 def _classify(
     col: str, key: str, series: pd.Series, n: int, nunique: int
 ) -> tuple[str, str, str]:
-    if pd.api.types.is_datetime64_any_dtype(series) or "date" in key or key.endswith("_time"):
+    if pd.api.types.is_datetime64_any_dtype(series) or "date" in key or "time" in key:
         semantic = "order_date"
         if "ship" in key:
             semantic = "ship_date"
@@ -68,6 +75,9 @@ def _classify(
         for token, semantic in _METRIC_TOKENS.items():
             if token in key:
                 return "metric", semantic, str(series.dtype)
+
+    if "category" in key:
+        return "dimension", "product", str(series.dtype)
 
     if key in {"row_id", "rowid"} or key.endswith("_name") or key in {"postal_code", "zip", "zipcode"}:
         return "ignore", key, str(series.dtype)

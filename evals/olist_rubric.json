@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "id": "ol-delay-review",
+      "question": "Teslimat gecikmesi ile review score arasında association var mı?",
+      "require": ["join_assemble", "association_test", "delay_days", "review_score"]
+    },
+    {
+      "id": "ol-gmv-review-category",
+      "question": "Yüksek ciro, düşük puan kategorileri hangileri?",
+      "require": ["join_assemble", "run_sql", "review_score"]
+    }
+  ]
+}
