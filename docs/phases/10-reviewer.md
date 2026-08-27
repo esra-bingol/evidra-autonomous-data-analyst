@@ -154,7 +154,7 @@ Regresyon: Reviewer, yasal V1 claim’ini (clear_driver, AOV trap, ranking, arte
 ## Görevler
 
 - [x] Sözleşme kilit (bu dosya)
-- [ ] `v1.0.0` tag + `feature/v2-reviewer` (repo işlemi)
+- [x] `v1.0.0` tag + `feature/v2-reviewer`
 - [ ] Test fixture’ları (implementation’dan önce veya birlikte)
 - [ ] Deterministik `reviewer.py` + `review_claims` düğümü
 - [ ] V1 + Olist regresyon
