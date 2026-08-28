@@ -32,6 +32,22 @@ class Claim(BaseModel):
     provenance_ok: bool = False
 
 
+ReviewDecision = Literal["accept", "reject", "revise", "abstain"]
+
+
+class ReviewVerdict(BaseModel):
+    """Deterministic audit. Does not create evidence."""
+
+    model_config = ConfigDict(frozen=True)
+
+    claim_id: str
+    decision: ReviewDecision
+    reason: str
+    issues: list[str] = Field(default_factory=list)
+    recommended_strength: Strength | None = None
+    recommended_claim: str | None = None
+
+
 class Chart(BaseModel):
     """Figure is not a source of numbers; it must point at evidence."""
 

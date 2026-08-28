@@ -40,6 +40,7 @@ def test_heuristic_and_allowlisted_llm_same_clear_driver():
     assert off["decision"] == on["decision"] == "primary_driver"
     assert "cause" not in json.dumps(on["claims"]).lower()
     assert "rank_hypotheses" in on["plan"]
+    assert "review_claims" in on["plan"]
     assert "intersect" in on["plan"]
     assert on["stop_reason"] == "strong_evidence"
 

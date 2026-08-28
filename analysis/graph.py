@@ -9,8 +9,10 @@ from typing import Any, TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from analysis.evidence.log import EvidenceLog
+from analysis.evidence.models import Claim, Evidence
 from analysis.evidence.pipeline import _draft_claims
 from analysis.evidence.validator import accepted_claims, validate_claim
+from analysis.reviewer import publish_claims, review_claims
 from analysis.heuristic import (
     WHY_CHANGE,
     _experiment_loop,
@@ -42,6 +44,8 @@ class GraphState(TypedDict, total=False):
     evidence: list
     traces: list
     charts: list
+    reviews: list
+    validated_claims: list
     roles: list
     capabilities: dict
     budget: dict
@@ -159,13 +163,35 @@ def validate_node(state: GraphState) -> dict:
     }
     drafts = _draft_claims(run, wrapped)
     validated = [validate_claim(c, ctx.log) for c in drafts]
-    claims = accepted_claims(validated, ctx.log)
     return {
         "plan": state["plan"],
-        "claims": [c.model_dump() for c in claims],
+        "validated_claims": [c.model_dump() for c in validated],
+        "claims": [c.model_dump() for c in accepted_claims(validated, ctx.log)],
         "evidence": [e.model_dump() for e in ctx.log.snapshot()],
         "traces": [t.model_dump() for t in ctx.traces],
         "charts": [c.model_dump() for c in ctx.charts],
+    }
+
+
+def review_node(state: GraphState) -> dict:
+    state.setdefault("plan", []).append("review_claims")
+    raw_claims = state.get("validated_claims") or state.get("claims") or []
+    claims = [Claim.model_validate(c) if not isinstance(c, Claim) else c for c in raw_claims]
+    evidence = [
+        Evidence.model_validate(e) if not isinstance(e, Evidence) else e
+        for e in (state.get("evidence") or [])
+    ]
+    verdicts = review_claims(
+        claims,
+        evidence,
+        str(state.get("decision") or "abstain"),
+        state.get("stop_reason"),
+    )
+    published = publish_claims(claims, verdicts)
+    return {
+        "plan": state["plan"],
+        "reviews": [v.model_dump() for v in verdicts],
+        "claims": [c.model_dump() for c in published],
     }
 
 
@@ -189,6 +215,7 @@ def build_graph():
     g.add_node("score", score_node)
     g.add_node("stop", stop_node)
     g.add_node("validate_claims", validate_node)
+    g.add_node("review_claims", review_node)
     g.add_node("report", report_node)
     g.add_edge(START, "inspect")
     g.add_edge("inspect", "profile")
@@ -203,7 +230,8 @@ def build_graph():
     g.add_edge("experiment_loop", "score")
     g.add_edge("score", "stop")
     g.add_edge("stop", "validate_claims")
-    g.add_edge("validate_claims", "report")
+    g.add_edge("validate_claims", "review_claims")
+    g.add_edge("review_claims", "report")
     g.add_edge("report", END)
     return g.compile()
 
@@ -260,6 +288,7 @@ def run_investigation(
         "evidence": final.get("evidence") or [],
         "claims": final.get("claims") or [],
         "charts": final.get("charts") or [],
+        "reviews": final.get("reviews") or [],
         "traces": final.get("traces") or [],
         "budget": final.get("budget") or ctx.budget.model_dump(),
         "roles": final.get("roles") or [],

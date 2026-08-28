@@ -235,3 +235,12 @@ Simpson, outlier-as-driver, and correlation-as-cause traps are **backlog**, not 
 **Allowed (V1):** association, ranking, quality, abstention; share of change; previous / current / delta; strength enum; “insufficient evidence”.
 
 **Disallowed:** cause, because (causal), root cause, `sebep` as causation, “X caused Y”, fabricated confidence percentages, numbers not present in evidence, claims that require `causal_analysis` or missing capabilities.
+
+---
+
+## 9. Reviewer (V2.1)
+
+Locked in [phases/10-reviewer.md](phases/10-reviewer.md). Not a V1 tool. Sits after claim validation, before report. Does not append evidence or call analysis tools.
+
+`ReviewVerdict.decision`: `accept` \| `reject` \| `revise` \| `abstain`. `revise` may only narrow wording/kind; it may not invent numbers. Claim objects do not gain a numeric confidence field. Strength remains on Evidence.
+

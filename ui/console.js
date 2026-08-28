@@ -161,6 +161,17 @@ function renderFindings(run) {
     showBanner("Abstain: capability ∩ soru boş veya sinyal yok. Hipotez uydurulmadı.", "warn");
   }
 
+  const revBox = $("reviews");
+  if (revBox) {
+    revBox.replaceChildren();
+    for (const rev of run.reviews || []) {
+      const p = document.createElement("p");
+      p.className = "mono";
+      p.textContent = `review: ${rev.decision} · ${rev.reason || ""}`;
+      revBox.appendChild(p);
+    }
+  }
+
   const claimsBox = $("claims");
   claimsBox.replaceChildren();
   for (const claim of run.claims || []) {
