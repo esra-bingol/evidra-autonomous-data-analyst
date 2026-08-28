@@ -1,0 +1,41 @@
+{
+  "description": "V2.4 Adaptive Research golden. Does not replace V1 golden.json.",
+  "items": [
+    {
+      "id": "ad-clear-1",
+      "dataset": "data/fixtures/clear_driver.csv",
+      "question": "Satış neden değişti?",
+      "expected": {
+        "decision": "primary_driver",
+        "primary_driver": "West × Office Supplies",
+        "stop_reason": "strong_evidence",
+        "next_research": false,
+        "first_template": "data_artefact"
+      }
+    },
+    {
+      "id": "ad-competing-1",
+      "dataset": "data/fixtures/adaptive/competing_drivers.csv",
+      "question": "What drove the sales change?",
+      "expected": {
+        "decision": "abstain",
+        "primary_driver": null,
+        "next_research": true,
+        "insufficient_kind": "multiple_plausible_drivers",
+        "first_template": "data_artefact",
+        "research_reason_contains": "unique primary driver"
+      }
+    },
+    {
+      "id": "ad-budget-1",
+      "dataset": "data/fixtures/adaptive/competing_drivers.csv",
+      "question": "What drove the sales change?",
+      "budget": {"max_experiments": 7, "max_seconds": 60, "max_adaptive_steps": 4},
+      "expected": {
+        "decision": "abstain",
+        "stop_reason": "budget",
+        "next_research": true
+      }
+    }
+  ]
+}

@@ -152,15 +152,38 @@ def _draft_claims(run: dict[str, Any], wrapped: dict[str, str]) -> list[Claim]:
             )
         )
     elif decision == "abstain":
+        kind_ins = run.get("insufficient_kind")
+        steps = run.get("research_steps") or []
+        if kind_ins == "multiple_plausible_drivers":
+            text = (
+                "Multiple segments each meet the driver-share threshold; "
+                "a unique primary driver is not established."
+            )
+            eids = [wrapped["interaction"]] if "interaction" in wrapped else []
+        elif kind_ins == "budget" or run.get("stop_reason") == "budget":
+            text = (
+                "Research budget exhausted before sufficient evidence was established; "
+                "the result is inconclusive."
+            )
+            eids = []
+        elif steps:
+            text = (
+                "Evidence remains insufficient after follow-up experiments; "
+                "the result is inconclusive."
+            )
+            eids = []
+        else:
+            text = (
+                "No concentrated association is supported; the result is inconclusive "
+                "(capability intersection does not justify a driver claim)."
+            )
+            eids = []
         claims.append(
             Claim(
                 claim_id="cl-001",
-                text=(
-                    "No concentrated association is supported; the result is inconclusive "
-                    "(capability intersection does not justify a driver claim)."
-                ),
+                text=text,
                 kind="abstention",
-                evidence_ids=[],
+                evidence_ids=eids,
             )
         )
     return claims

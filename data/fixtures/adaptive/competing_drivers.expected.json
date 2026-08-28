@@ -1,0 +1,11 @@
+{
+  "ground_truth": {
+    "sales_previous": 2200.0,
+    "sales_current": 400.0,
+    "tied_cells": ["West × Office Supplies", "East × Furniture"],
+    "each_share_of_change": 0.5,
+    "unique_primary_driver": false
+  },
+  "expected_analytic_behavior": "After locating the tie, run closed follow-ups, then abstain rather than name a unique primary_driver.",
+  "expected_claim_reviewer_behavior": "Abstention with a non-causal unique-driver disclaimer. Reviewer still runs."
+}

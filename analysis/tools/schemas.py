@@ -38,8 +38,10 @@ class Budget(BaseModel):
     max_experiments: int = 20
     max_interaction_depth: int = 2
     max_seconds: float = 60.0
+    max_adaptive_steps: int = 4
     hypotheses_used: int = 0
     experiments_used: int = 0
+    adaptive_steps_used: int = 0
     started_monotonic: float = 0.0
 
 
@@ -57,6 +59,7 @@ class Hypothesis(BaseModel):
     bindings: dict[str, Any] = Field(default_factory=dict)
     status: Literal["ranked", "bound", "skipped", "tested", "dropped"] = "ranked"
     selected_by: Literal["heuristic", "llm"] = "heuristic"
+    reason: str | None = None
 
 
 class ToolError(BaseModel):

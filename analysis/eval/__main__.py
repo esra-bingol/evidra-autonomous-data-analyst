@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from analysis.eval.adaptive import run_adaptive
 from analysis.eval.adversarial import run_adversarial
 from analysis.eval.efficiency import build_report, collect_rows
 from analysis.eval.olist_rubric import run_olist_rubric
@@ -23,9 +24,11 @@ def main(argv: list[str] | None = None) -> None:
     report = run_suite()
     olist = run_olist_rubric()
     adversarial = run_adversarial()
+    adaptive = run_adaptive()
     report["olist_rubric"] = olist
     report["adversarial"] = adversarial
-    efficiency = build_report(collect_rows(report, olist, adversarial))
+    report["adaptive"] = adaptive
+    efficiency = build_report(collect_rows(report, olist, adversarial, adaptive))
     report["efficiency"] = {
         "efficiency_enforced": efficiency["efficiency_enforced"],
         "gate_order": efficiency["gate_order"],
@@ -34,7 +37,12 @@ def main(argv: list[str] | None = None) -> None:
         "n_blocked": efficiency["n_blocked"],
         "table": efficiency["table"],
     }
-    report["pass"] = bool(report["pass"] and olist.get("pass", True) and adversarial.get("must_pass_ok", True))
+    report["pass"] = bool(
+        report["pass"]
+        and olist.get("pass", True)
+        and adversarial.get("must_pass_ok", True)
+        and adaptive.get("pass", True)
+    )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -55,6 +63,10 @@ def main(argv: list[str] | None = None) -> None:
                 "adversarial": {
                     "must_pass_ok": (report.get("adversarial") or {}).get("must_pass_ok"),
                     "n_reported_fail": (report.get("adversarial") or {}).get("n_reported_fail"),
+                },
+                "adaptive": {
+                    "pass": (report.get("adaptive") or {}).get("pass"),
+                    "n_pass": (report.get("adaptive") or {}).get("n_pass"),
                 },
                 "efficiency": {
                     "enforced": (report.get("efficiency") or {}).get("efficiency_enforced"),

@@ -8,6 +8,7 @@ from typing import Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
+from analysis.adaptive import assess_sufficiency, run_next_step
 from analysis.evidence.log import EvidenceLog
 from analysis.evidence.models import Claim, Evidence
 from analysis.evidence.pipeline import _draft_claims
@@ -50,6 +51,10 @@ class GraphState(TypedDict, total=False):
     capabilities: dict
     budget: dict
     ctx: ToolContext
+    sufficient: bool
+    research_steps: list
+    pending_reason: str | None
+    insufficient_kind: str | None
 
 
 def _step(state: GraphState, name: str, **kwargs: Any) -> None:
@@ -127,6 +132,28 @@ def experiment_node(state: GraphState) -> dict:
     }
 
 
+def assess_node(state: GraphState) -> dict:
+    state.setdefault("plan", []).append("assess_evidence")
+    ctx = state["ctx"]
+    hyps = list(state.get("hypotheses") or [])
+    update = assess_sufficiency(state, ctx, hyps)
+    update["plan"] = state["plan"]
+    update["hypotheses"] = hyps
+    update["budget"] = ctx.budget.model_dump()
+    return update
+
+
+def next_research_node(state: GraphState) -> dict:
+    state.setdefault("plan", []).append("next_research")
+    update = run_next_step(state)
+    update["plan"] = state["plan"]
+    return update
+
+
+def _route_assess(state: GraphState) -> str:
+    return "stop" if state.get("sufficient") else "next_research"
+
+
 def score_node(state: GraphState) -> dict:
     state.setdefault("plan", []).append("score")
     return {"plan": state["plan"]}
@@ -160,6 +187,9 @@ def validate_node(state: GraphState) -> dict:
         "association_test": _payload(ctx, "association_test"),
         "join_assemble": _payload(ctx, "join_assemble"),
         "run_sql": _payload(ctx, "run_sql"),
+        "stop_reason": state.get("stop_reason"),
+        "insufficient_kind": state.get("insufficient_kind"),
+        "research_steps": state.get("research_steps") or [],
     }
     drafts = _draft_claims(run, wrapped)
     validated = [validate_claim(c, ctx.log) for c in drafts]
@@ -213,6 +243,8 @@ def build_graph():
     g.add_node("rank_hypotheses", rank_node)
     g.add_node("experiment_loop", experiment_node)
     g.add_node("score", score_node)
+    g.add_node("assess_evidence", assess_node)
+    g.add_node("next_research", next_research_node)
     g.add_node("stop", stop_node)
     g.add_node("validate_claims", validate_node)
     g.add_node("review_claims", review_node)
@@ -228,7 +260,13 @@ def build_graph():
     )
     g.add_edge("rank_hypotheses", "experiment_loop")
     g.add_edge("experiment_loop", "score")
-    g.add_edge("score", "stop")
+    g.add_edge("score", "assess_evidence")
+    g.add_conditional_edges(
+        "assess_evidence",
+        _route_assess,
+        {"stop": "stop", "next_research": "next_research"},
+    )
+    g.add_edge("next_research", "assess_evidence")
     g.add_edge("stop", "validate_claims")
     g.add_edge("validate_claims", "review_claims")
     g.add_edge("review_claims", "report")
@@ -274,6 +312,10 @@ def run_investigation(
         "primary_driver": None,
         "skip_experiments": False,
         "ctx": ctx,
+        "sufficient": False,
+        "research_steps": [],
+        "pending_reason": None,
+        "insufficient_kind": None,
     }
     final = get_graph().invoke(initial)
     hyps = final.get("hypotheses") or []
@@ -293,6 +335,8 @@ def run_investigation(
         "budget": final.get("budget") or ctx.budget.model_dump(),
         "roles": final.get("roles") or [],
         "capabilities": final.get("capabilities") or {},
+        "research_steps": final.get("research_steps") or [],
+        "insufficient_kind": final.get("insufficient_kind"),
     }
 
 
