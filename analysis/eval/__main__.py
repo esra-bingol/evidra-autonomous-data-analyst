@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from analysis.eval.adversarial import run_adversarial
+from analysis.eval.efficiency import build_report, collect_rows
 from analysis.eval.olist_rubric import run_olist_rubric
 from analysis.eval.runner import run_suite
 
@@ -24,6 +25,15 @@ def main(argv: list[str] | None = None) -> None:
     adversarial = run_adversarial()
     report["olist_rubric"] = olist
     report["adversarial"] = adversarial
+    efficiency = build_report(collect_rows(report, olist, adversarial))
+    report["efficiency"] = {
+        "efficiency_enforced": efficiency["efficiency_enforced"],
+        "gate_order": efficiency["gate_order"],
+        "proposed_thresholds": efficiency["proposed_thresholds"],
+        "n_eligible": efficiency["n_eligible"],
+        "n_blocked": efficiency["n_blocked"],
+        "table": efficiency["table"],
+    }
     report["pass"] = bool(report["pass"] and olist.get("pass", True) and adversarial.get("must_pass_ok", True))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -45,6 +55,16 @@ def main(argv: list[str] | None = None) -> None:
                 "adversarial": {
                     "must_pass_ok": (report.get("adversarial") or {}).get("must_pass_ok"),
                     "n_reported_fail": (report.get("adversarial") or {}).get("n_reported_fail"),
+                },
+                "efficiency": {
+                    "enforced": (report.get("efficiency") or {}).get("efficiency_enforced"),
+                    "n_eligible": (report.get("efficiency") or {}).get("n_eligible"),
+                    "n_blocked": (report.get("efficiency") or {}).get("n_blocked"),
+                    "proposed_max_experiments": (
+                        ((report.get("efficiency") or {}).get("proposed_thresholds") or {})
+                        .get("experiments")
+                        or {}
+                    ).get("proposed_max"),
                 },
                 "out": str(out),
             },

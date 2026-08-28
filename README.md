@@ -90,12 +90,14 @@ Heuristic policy, no UI:
 
 ```bash
 uv run python -m analysis.eval
-uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py tests/test_api.py tests/test_reviewer.py tests/test_adversarial.py
+uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py tests/test_api.py tests/test_reviewer.py tests/test_adversarial.py tests/test_efficiency.py
 ```
 
 Golden matrix: `evals/golden.json` (~20 items: driver, trap, abstain, interaction, temporal, anomaly, numerical, plus a budget item). Gates are correctness, evidence binding, completeness (`stop_reason`), and forbidden language. Tool counts and latency go to `evals/out/efficiency_log.jsonl` and are **not** a release gate.
 
 Adversarial tables (`evals/adversarial.json`, V2.2) score robustness separately. Language and missing-capability locks still gate; remaining categories are reported, not used to rewrite the engine.
+
+Efficiency (`python -m analysis.eval.efficiency`, V2.3) overlays tool/experiment counts on the same suites. It does not override correctness. Proposed caps come from measured golden maxima and are **not** a release gate.
 
 ---
 

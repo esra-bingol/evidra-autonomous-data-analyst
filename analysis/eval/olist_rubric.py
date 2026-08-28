@@ -5,6 +5,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from analysis.eval.efficiency import overlay_row
+from analysis.eval.runner import gate_evidence
 from analysis.graph import run_investigation
 from analysis.olist import olist_available
 
@@ -44,6 +46,13 @@ def score_case(item: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
         "decision": result.get("decision"),
         "gates": gates,
         "pass": all(gates.values()),
+        "efficiency_row": overlay_row(
+            case=item["id"],
+            suite="olist",
+            correct=all(gates.values()),
+            evidence_valid=gate_evidence(result),
+            result=result,
+        ),
     }
 
 

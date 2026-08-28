@@ -6,6 +6,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+from analysis.eval.efficiency import measure_run, overlay_row
 from analysis.evidence.log import EvidenceLog
 from analysis.evidence.models import Claim
 from analysis.evidence.validator import validate_claim
@@ -124,13 +125,29 @@ def score_item(item: dict[str, Any], packed: dict[str, Any]) -> dict[str, Any]:
         "completeness": gate_completeness(result),
         "forbidden_language": gate_language(item, result),
     }
+    prior = packed.get("efficiency") or {}
+    metrics = measure_run(
+        result,
+        duration_ms=prior.get("duration_ms"),
+        token_cost=prior.get("token_cost"),
+    )
     return {
         "id": item["id"],
         "metric_type": item["metric_type"],
         "skipped": False,
         "gates": gates,
         "pass": all(gates.values()),
-        "efficiency": packed["efficiency"],
+        "efficiency": {**prior, **metrics},
+        "efficiency_row": overlay_row(
+            case=item["id"],
+            suite="golden",
+            correct=gates["correctness"],
+            evidence_valid=gates["evidence"],
+            result=result,
+            duration_ms=prior.get("duration_ms"),
+            token_cost=prior.get("token_cost"),
+            extra={"metric_type": item.get("metric_type")},
+        ),
         "decision": result.get("decision"),
         "stop_reason": result.get("stop_reason"),
         "primary_driver": result.get("primary_driver"),

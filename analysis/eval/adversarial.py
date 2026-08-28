@@ -5,7 +5,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-from analysis.eval.runner import _CAUSAL
+from analysis.eval.efficiency import overlay_row
+from analysis.eval.runner import _CAUSAL, gate_evidence
 from analysis.graph import run_investigation
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -78,6 +79,14 @@ def score_item(item: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
         "failure_reason": None if passed else "; ".join(failed),
         "failure_class": None if passed else klass,
         "failure_class_label": None if passed else FAILURE_CLASSES.get(klass, klass),
+        "efficiency_row": overlay_row(
+            case=item["id"],
+            suite="adversarial",
+            correct=passed,
+            evidence_valid=gate_evidence(result),
+            result=result,
+            extra={"category": item.get("category"), "must_pass": bool(item.get("must_pass"))},
+        ),
     }
     return row
 

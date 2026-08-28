@@ -21,7 +21,7 @@ Bu dosya projenin **genel planıdır**. Sözleşmeler: [docs/SCHEMAS.md](docs/SC
 | 7 | [docs/phases/07-minimal-ui.md](docs/phases/07-minimal-ui.md) | 4 blok konsol; ajan davranışı değişmez |
 | 8 | [docs/phases/08-optional-python.md](docs/phases/08-optional-python.md) | İsteğe bağlı izole Python; atlamak geçerli |
 | 9 | [docs/phases/09-olist.md](docs/phases/09-olist.md) | Çok tablolu yapısal benchmark |
-| 10 | [docs/phases/10-v2.md](docs/phases/10-v2.md) | XOR menü; V2.1 [10-reviewer.md](docs/phases/10-reviewer.md); V2.2 [10-v2.2-adversarial.md](docs/phases/10-v2.2-adversarial.md) |
+| 10 | [docs/phases/10-v2.md](docs/phases/10-v2.md) | XOR menü; V2.1 reviewer; V2.2 adversarial; V2.3 [10-v2.3-efficiency.md](docs/phases/10-v2.3-efficiency.md) |
 
 **Kural:** Bir aşamanın çıkış kriteri yeşil olmadan sonrakine geçilmez. Takvim yok; çıkış kriteri var. V1 **core** Aşama 6’da UI’sız yeşil olur. Olist Aşama 9’dur, V1 dataset’i değildir.
 
