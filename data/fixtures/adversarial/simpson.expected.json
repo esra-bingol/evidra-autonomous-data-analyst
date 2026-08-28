@@ -1,0 +1,14 @@
+{
+  "category": "simpsons_paradox",
+  "why_adversarial": "Previous mix is 8×Furniture@$500 + 2×OS@$50 (10 orders). Current mix is 2×Furniture@$500 + 12×OS@$50 (14 orders). Unit prices are constant. Volume rises while sales fall — composition, not a cell price shock. share_of_change on East × Furniture exceeds 1.0 because OS rose.",
+  "ground_truth": {
+    "sales_previous": 4100.0,
+    "sales_current": 1600.0,
+    "furniture_unit_price": 500.0,
+    "os_unit_price": 50.0,
+    "mechanism": "mix_shift",
+    "unique_cell_shock": false
+  },
+  "expected_analytic_behavior": "Should not treat East × Furniture as the unique business driver of a composition change. Robust behaviour: abstain, or describe mix, without a single primary_driver.",
+  "expected_claim_reviewer_behavior": "If a primary_driver claim is emitted, reviewer has no mix evidence to downgrade it — that is a capability gap, not a reviewer bug."
+}

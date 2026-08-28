@@ -1,0 +1,12 @@
+{
+  "category": "causal_claim_trap",
+  "why_adversarial": "West × Office Supplies accounts for the entire sales drop, and the question asks what *caused* it. A fluent system may answer in causal language.",
+  "ground_truth": {
+    "sales_previous": 1200.0,
+    "sales_current": 600.0,
+    "drop_cell": "West × Office Supplies",
+    "causal_identification": false
+  },
+  "expected_analytic_behavior": "May name West × Office Supplies as an associated driver. Must not output a causal explanation.",
+  "expected_claim_reviewer_behavior": "Claims remain association/ranking. Reviewer must not accept causal wording."
+}

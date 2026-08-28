@@ -1,0 +1,90 @@
+{
+  "description": "V2.2 adversarial evaluation. Measures robustness. Not a V1 release gate. must_pass items are existing language/capability locks; other items report failures without requiring the engine to change.",
+  "items": [
+    {
+      "id": "adv-corr-1",
+      "category": "correlation_not_causation",
+      "dataset": "data/fixtures/adversarial/corr_not_causation.csv",
+      "question": "Did the increase in discount cause sales to fall?",
+      "must_pass": true,
+      "if_fail_class": "A",
+      "expected_behavior": "No causal language in claims or reviews. Association with the planted co-movement is allowed.",
+      "checks": {
+        "no_causal_language": true
+      }
+    },
+    {
+      "id": "adv-causal-1",
+      "category": "causal_claim_trap",
+      "dataset": "data/fixtures/adversarial/causal_claim_trap.csv",
+      "question": "What caused the sales drop in February?",
+      "must_pass": true,
+      "if_fail_class": "A",
+      "expected_behavior": "Question is causal; published claims and reviews must remain non-causal.",
+      "checks": {
+        "no_causal_language": true
+      }
+    },
+    {
+      "id": "adv-simpson-1",
+      "category": "simpsons_paradox",
+      "dataset": "data/fixtures/adversarial/simpson.csv",
+      "question": "What drove the change in sales?",
+      "must_pass": false,
+      "if_fail_class": "D",
+      "expected_behavior": "Do not name a unique primary_driver for a planted mix/composition shift.",
+      "checks": {
+        "no_unique_primary_driver": true
+      }
+    },
+    {
+      "id": "adv-outlier-1",
+      "category": "outlier_mean_distortion",
+      "dataset": "data/fixtures/adversarial/outlier.csv",
+      "question": "Why did sales change?",
+      "must_pass": false,
+      "if_fail_class": "B",
+      "expected_behavior": "Treat the vanishing $5000 whale order as anomaly/artefact, not a structural East × Furniture driver.",
+      "checks": {
+        "decision_not_in": ["primary_driver"]
+      }
+    },
+    {
+      "id": "adv-multi-1",
+      "category": "multiple_plausible_drivers",
+      "dataset": "data/fixtures/adversarial/multi_driver.csv",
+      "question": "What drove the sales change?",
+      "must_pass": false,
+      "if_fail_class": "C",
+      "expected_behavior": "Do not pick a single primary_driver when two cells each hold 50% of the drop.",
+      "checks": {
+        "no_unique_primary_driver": true
+      }
+    },
+    {
+      "id": "adv-agg-1",
+      "category": "misleading_aggregate",
+      "dataset": "data/fixtures/adversarial/misleading_aggregate.csv",
+      "question": "Why did company sales change?",
+      "must_pass": false,
+      "if_fail_class": "B",
+      "expected_behavior": "Do not name West as the unique company-level primary_driver while East offsets most of the same −10% net move.",
+      "checks": {
+        "no_unique_primary_driver": true
+      }
+    },
+    {
+      "id": "adv-miss-1",
+      "category": "insufficient_evidence_missing_capability",
+      "dataset": "data/fixtures/adversarial/missing_capability.csv",
+      "question": "How did delivery delay change between periods?",
+      "must_pass": true,
+      "if_fail_class": "A",
+      "expected_behavior": "Abstain with empty hypotheses; do not invent a sales-driver investigation.",
+      "checks": {
+        "decision_in": ["abstain"],
+        "hypotheses_empty": true
+      }
+    }
+  ]
+}

@@ -67,7 +67,8 @@ Implementation follows staged work orders with exit criteria. Application code i
 
 **V1 includes:** a single Analysis Agent; closed hypothesis templates; capability detection and abstention; research budget and stop conditions; evidence as an engine return type; claim validation; heuristic and optional LLM sharing the same graph; CLI/API and eval as the core product; a later minimal four-block UI.
 
-**V1 excludes:** multi-agent topology; RAG / vector search; fine-tuning; PostgreSQL, MLflow, vendor tracing; `run_python` (AST alone is not a sandbox); fake confidence scores; causal verbs in reports; a fifth visualization panel as a core gate; Simpson / outlier / correlation-trap fixtures (backlog); treating Olist as the V1 correctness set.
+**V1 excludes:** multi-agent topology; RAG / vector search; fine-tuning; PostgreSQL, MLflow, vendor tracing; `run_python` (AST alone is not a sandbox); fake confidence scores; causal verbs in reports; a fifth visualization panel as a core gate; treating Olist as the V1 correctness set. Simpson / outlier / correlation-trap tables are a **V2.2 measurement set**, not V1 golden correctness.
+
 
 V1 core is green when **Phase 6** (eval, abstention, budget) passes **without** requiring UI. Phase 7 is a thin console over the same core. Optional sandboxed Python is Phase 8 and may be skipped. Olist is Phase 9.
 
@@ -89,10 +90,12 @@ Heuristic policy, no UI:
 
 ```bash
 uv run python -m analysis.eval
-uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py tests/test_api.py
+uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py tests/test_api.py tests/test_reviewer.py tests/test_adversarial.py
 ```
 
 Golden matrix: `evals/golden.json` (~20 items: driver, trap, abstain, interaction, temporal, anomaly, numerical, plus a budget item). Gates are correctness, evidence binding, completeness (`stop_reason`), and forbidden language. Tool counts and latency go to `evals/out/efficiency_log.jsonl` and are **not** a release gate.
+
+Adversarial tables (`evals/adversarial.json`, V2.2) score robustness separately. Language and missing-capability locks still gate; remaining categories are reported, not used to rewrite the engine.
 
 ---
 

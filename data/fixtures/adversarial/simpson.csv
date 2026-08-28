@@ -1,0 +1,25 @@
+order_id,order_date,region,category,customer_id,sales,quantity
+s1,2024-01-03,East,Furniture,u1,500,1
+s2,2024-01-10,East,Furniture,u1,500,1
+s3,2024-01-17,East,Furniture,u1,500,1
+s4,2024-01-24,East,Furniture,u1,500,1
+s5,2024-01-03,East,Furniture,u1,500,1
+s6,2024-01-10,East,Furniture,u1,500,1
+s7,2024-01-17,East,Furniture,u1,500,1
+s8,2024-01-24,East,Furniture,u1,500,1
+s9,2024-01-03,West,Office Supplies,u1,50,1
+s10,2024-01-10,West,Office Supplies,u1,50,1
+s11,2024-02-04,East,Furniture,u1,500,1
+s12,2024-02-11,East,Furniture,u1,500,1
+s13,2024-02-04,West,Office Supplies,u1,50,1
+s14,2024-02-11,West,Office Supplies,u1,50,1
+s15,2024-02-18,West,Office Supplies,u1,50,1
+s16,2024-02-25,West,Office Supplies,u1,50,1
+s17,2024-02-04,West,Office Supplies,u1,50,1
+s18,2024-02-11,West,Office Supplies,u1,50,1
+s19,2024-02-18,West,Office Supplies,u1,50,1
+s20,2024-02-25,West,Office Supplies,u1,50,1
+s21,2024-02-04,West,Office Supplies,u1,50,1
+s22,2024-02-11,West,Office Supplies,u1,50,1
+s23,2024-02-18,West,Office Supplies,u1,50,1
+s24,2024-02-25,West,Office Supplies,u1,50,1

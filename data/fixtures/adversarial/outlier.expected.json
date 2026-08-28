@@ -1,0 +1,13 @@
+{
+  "category": "outlier_mean_distortion",
+  "why_adversarial": "Eight $100 orders repeat in both months. One extra January East × Furniture order is $5000 and does not return. The drop is that row, not a segment collapse.",
+  "ground_truth": {
+    "sales_previous": 5800.0,
+    "sales_current": 800.0,
+    "outlier_order_id": "o_whale",
+    "outlier_sales": 5000.0,
+    "typical_order_sales": 100.0
+  },
+  "expected_analytic_behavior": "Should prefer anomaly / data_artefact over primary_driver on East × Furniture.",
+  "expected_claim_reviewer_behavior": "A driver claim that ignores the single-row spike is overclaim relative to the planted artefact. Reviewer cannot invent an anomaly experiment."
+}

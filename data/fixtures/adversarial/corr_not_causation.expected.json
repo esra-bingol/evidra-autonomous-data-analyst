@@ -1,0 +1,13 @@
+{
+  "category": "correlation_not_causation",
+  "why_adversarial": "discount rises from 0 to 0.25 in lockstep with a sales decline. The table plants co-movement only; it does not identify cause.",
+  "ground_truth": {
+    "sales_previous": 800.0,
+    "sales_current": 640.0,
+    "discount_previous": 0.0,
+    "discount_current": 0.25,
+    "identifiable_cause": false
+  },
+  "expected_analytic_behavior": "May report a temporal sales decline and/or an association with discount. Must not treat discount as a proven cause.",
+  "expected_claim_reviewer_behavior": "Published claims and reviews must use association language. Causal verbs must be rejected, not accepted."
+}

@@ -1,0 +1,18 @@
+order_id,order_date,region,category,customer_id,sales,quantity
+o1,2024-01-03,East,Furniture,u1,100,1
+o2,2024-01-10,East,Furniture,u1,100,1
+o3,2024-01-17,West,Office Supplies,u1,100,1
+o4,2024-01-24,West,Office Supplies,u1,100,1
+o5,2024-01-03,South,Technology,u1,100,1
+o6,2024-01-10,South,Technology,u1,100,1
+o7,2024-01-17,Central,Furniture,u1,100,1
+o8,2024-01-24,Central,Furniture,u1,100,1
+o_whale,2024-01-03,East,Furniture,whale,5000,1
+o9,2024-02-04,East,Furniture,u1,100,1
+o10,2024-02-11,East,Furniture,u1,100,1
+o11,2024-02-18,West,Office Supplies,u1,100,1
+o12,2024-02-25,West,Office Supplies,u1,100,1
+o13,2024-02-04,South,Technology,u1,100,1
+o14,2024-02-11,South,Technology,u1,100,1
+o15,2024-02-18,Central,Furniture,u1,100,1
+o16,2024-02-25,Central,Furniture,u1,100,1

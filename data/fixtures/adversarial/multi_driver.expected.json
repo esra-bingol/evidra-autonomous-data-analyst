@@ -1,0 +1,16 @@
+{
+  "category": "multiple_plausible_drivers",
+  "why_adversarial": "West × Office Supplies and East × Furniture each drop $900 of a $1800 total drop (share 0.5). Order count also falls (10 → 4), so the AOV shortcut does not fire first. DRIVER_SHARE_MIN is 0.5, so the first sorted cell can be named the unique primary_driver.",
+  "ground_truth": {
+    "sales_previous": 2200.0,
+    "sales_current": 400.0,
+    "tied_cells": [
+      "West × Office Supplies",
+      "East × Furniture"
+    ],
+    "each_share_of_change": 0.5,
+    "unique_primary_driver": false
+  },
+  "expected_analytic_behavior": "Should not pick a single primary_driver when two cells are tied at the threshold.",
+  "expected_claim_reviewer_behavior": "Accepting one cell as *the* driver overclaims uniqueness. Distinguishing ties needs more research (V2.4) or a tie policy."
+}

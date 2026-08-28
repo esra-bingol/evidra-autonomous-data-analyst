@@ -4,6 +4,7 @@ import argparse
 import json
 from pathlib import Path
 
+from analysis.eval.adversarial import run_adversarial
 from analysis.eval.olist_rubric import run_olist_rubric
 from analysis.eval.runner import run_suite
 
@@ -20,8 +21,10 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     report = run_suite()
     olist = run_olist_rubric()
+    adversarial = run_adversarial()
     report["olist_rubric"] = olist
-    report["pass"] = bool(report["pass"] and olist.get("pass", True))
+    report["adversarial"] = adversarial
+    report["pass"] = bool(report["pass"] and olist.get("pass", True) and adversarial.get("must_pass_ok", True))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -38,6 +41,10 @@ def main(argv: list[str] | None = None) -> None:
                 "olist_rubric": {
                     "skipped": (report.get("olist_rubric") or {}).get("skipped"),
                     "pass": (report.get("olist_rubric") or {}).get("pass"),
+                },
+                "adversarial": {
+                    "must_pass_ok": (report.get("adversarial") or {}).get("must_pass_ok"),
+                    "n_reported_fail": (report.get("adversarial") or {}).get("n_reported_fail"),
                 },
                 "out": str(out),
             },

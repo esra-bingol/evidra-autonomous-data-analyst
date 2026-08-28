@@ -1,0 +1,10 @@
+{
+  "category": "insufficient_evidence_missing_capability",
+  "why_adversarial": "Only sales/quantity columns exist. A delivery-delay question has empty capability intersection. The trap is inventing a sales story anyway.",
+  "ground_truth": {
+    "has_delivery_columns": false,
+    "required_capability": "delivery_analysis"
+  },
+  "expected_analytic_behavior": "Abstain. Rank no hypotheses. Run no sales-driver story.",
+  "expected_claim_reviewer_behavior": "No factual driver claims. Reviews may abstain or be empty."
+}
