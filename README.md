@@ -114,6 +114,9 @@ uv run python -m analysis.api
 
 Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + nested charts and evidence.
 
+Conversational surface (V2.5, same engine): `http://127.0.0.1:8765/chat`. Follow-ups reuse the last run; chat text is not SQL.
+
+
 API:
 
 - `POST /datasets` — JSON `{ "fixture_id": "clear_driver" }` or `{ "fixture_id": "olist" }`, or multipart CSV/Excel/zip

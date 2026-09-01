@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Evidra — sohbet yüzeyi</title>
+    <link rel="stylesheet" href="/static/chat.css" />
+    <script src="/static/chat.js" defer></script>
+  </head>
+  <body>
+    <aside class="rail">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">E</span>
+        <div>
+          <p class="brand-kicker">Investigation assistant</p>
+          <h1>Evidra</h1>
+        </div>
+      </div>
+      <p class="visually-hidden">Sohbet yüzeyi</p>
+      <section class="rail-card">
+        <h2>Dataset</h2>
+        <label for="fixture">Gömülü fixture</label>
+        <select id="fixture"></select>
+        <button type="button" id="btn-fixture" class="btn-primary">Bağla</button>
+        <p id="dataset-meta" class="meta">Önce dataset bağlayın. Metin SQL olmaz.</p>
+      </section>
+      <nav class="rail-nav">
+        <a href="/">İnceleme konsolu</a>
+      </nav>
+      <p class="rail-note">
+        Engine inceler; bu katman özetler. Follow-up son investigation state’inden devam eder.
+      </p>
+    </aside>
+    <main class="stage">
+      <p id="banner" class="toast hidden" role="status"></p>
+      <article class="panel">
+        <header class="panel-head">
+          <span class="head-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+              <path d="M9 14.5c1.2 1 4.8 1 6 0M9.5 10h.01M14.5 10h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+            </svg>
+          </span>
+          <div>
+            <p class="head-kicker">Your AI agent</p>
+            <p class="head-title">Sohbet yüzeyi</p>
+          </div>
+        </header>
+        <div id="log" class="thread" aria-live="polite">
+          <div id="empty" class="empty-card">
+            <p class="hello">Merhaba — ben Evidra. İş sorunu doğal dilde sor; analiz tabloyu bu katman değil investigation engine yapar.</p>
+            <p class="help">Ne konusunda yardımcı olayım?</p>
+            <div class="suggest" id="examples-empty"></div>
+          </div>
+        </div>
+        <form id="composer" class="dock">
+          <div class="suggest dock-suggest" id="examples"></div>
+          <div class="composer-shell">
+            <label class="visually-hidden" for="msg">Mesaj</label>
+            <textarea id="msg" rows="1" placeholder="Ask a question about the investigation…"></textarea>
+            <button type="submit" id="btn-send" class="send" disabled aria-label="Gönder">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                <path d="M4 12L20 4l-6 16-2.5-6.5L4 12z" fill="currentColor" />
+              </svg>
+            </button>
+          </div>
+        </form>
+      </article>
+    </main>
+  </body>
+</html>

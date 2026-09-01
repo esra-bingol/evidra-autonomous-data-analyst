@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from analysis.chat import handle_message
 from analysis.capabilities import detect_capabilities
 from analysis.graph import run_investigation
 from analysis.load import load_source
@@ -33,11 +34,13 @@ _FIXTURE_FILES = {
 
 _datasets: dict[str, dict[str, Any]] = {}
 _runs: dict[str, dict[str, Any]] = {}
+_chats: dict[str, dict[str, Any]] = {}
 
 
 def reset_store() -> None:
     _datasets.clear()
     _runs.clear()
+    _chats.clear()
 
 
 class FixtureBody(BaseModel):
@@ -46,6 +49,14 @@ class FixtureBody(BaseModel):
 
 class AnalyzeBody(BaseModel):
     question: str = Field(min_length=1)
+
+
+class ChatMessageBody(BaseModel):
+    text: str = Field(min_length=1)
+
+
+class ChatCreateBody(BaseModel):
+    dataset_id: str
 
 
 def catalog() -> list[dict[str, Any]]:
@@ -188,6 +199,89 @@ def create_app() -> FastAPI:
         if not rec:
             raise HTTPException(404, "run not found")
         return jsonable_encoder(rec)
+
+    @app.post("/chats")
+    def create_chat(body: ChatCreateBody) -> dict[str, Any]:
+        rec = _datasets.get(body.dataset_id)
+        if not rec:
+            raise HTTPException(404, "dataset not found")
+        cid = _new_id("chat")
+        chat = {
+            "id": cid,
+            "dataset_id": body.dataset_id,
+            "last_run_id": None,
+            "messages": [],
+        }
+        _chats[cid] = chat
+        return chat
+
+    @app.get("/chats/{chat_id}")
+    def get_chat(chat_id: str) -> dict[str, Any]:
+        chat = _chats.get(chat_id)
+        if not chat:
+            raise HTTPException(404, "chat not found")
+        return jsonable_encoder(chat)
+
+    @app.post("/chats/{chat_id}/messages")
+    def post_chat_message(chat_id: str, body: ChatMessageBody) -> dict[str, Any]:
+        chat = _chats.get(chat_id)
+        if not chat:
+            raise HTTPException(404, "chat not found")
+        ds = _datasets.get(chat["dataset_id"])
+        if not ds:
+            raise HTTPException(404, "dataset not found")
+        text = body.text.strip()
+        if not text:
+            raise HTTPException(400, "text required")
+        last = _runs.get(chat["last_run_id"]) if chat.get("last_run_id") else None
+        user_msg = {"role": "user", "text": text}
+        chat["messages"].append(user_msg)
+
+        def _investigate(path: str, question: str) -> dict[str, Any]:
+            return run_investigation(path, question)
+
+        turn = handle_message(
+            text=text,
+            dataset_path=ds["path"],
+            last_run=last,
+            investigate=_investigate,
+        )
+        if turn.get("ran_investigation"):
+            raw = turn.pop("run", {}) or {}
+            rid = _new_id("run")
+            payload = {
+                "id": rid,
+                "dataset_id": chat["dataset_id"],
+                "question": text,
+                "error": raw.get("error"),
+                **raw,
+            }
+            payload["id"] = rid
+            _runs[rid] = payload
+            chat["last_run_id"] = rid
+            turn["run_id"] = rid
+            turn["status"] = {
+                "decision": payload.get("decision"),
+                "stop_reason": payload.get("stop_reason"),
+                "primary_driver": payload.get("primary_driver"),
+            }
+            turn["claim_ids"] = [c.get("claim_id") for c in (payload.get("claims") or []) if c.get("claim_id")]
+            eids: list[str] = []
+            for claim in payload.get("claims") or []:
+                for eid in claim.get("evidence_ids") or []:
+                    if eid not in eids:
+                        eids.append(eid)
+            turn["evidence_ids"] = eids
+        assistant = {k: v for k, v in turn.items() if k != "run"}
+        chat["messages"].append(assistant)
+        return jsonable_encoder({"chat": chat, "message": assistant})
+
+    @app.get("/chat")
+    def chat_page() -> FileResponse:
+        page = UI_DIR / "chat.html"
+        if not page.exists():
+            raise HTTPException(500, "chat UI missing")
+        return FileResponse(page)
 
     @app.get("/")
     def index() -> FileResponse:
