@@ -124,9 +124,16 @@ API:
 
 - `POST /datasets` — JSON `{ "fixture_id": "clear_driver" }` or `{ "fixture_id": "olist" }`, or multipart CSV/Excel/zip
 - `GET /datasets/{id}` — overview / capabilities
-- `POST /datasets/{id}/analyze` — `{ "question": "..." }`
-- `GET /runs/{id}` — plan, claims, evidence, charts, traces, `stop_reason`, `investigation_report`
+- `POST /datasets/{id}/analyze` — `{ "question": "..." }` (completed run is written under `data/processed/runs/`)
+- `GET /runs` — metadata list (`id`, question, dataset_id, status, timestamps)
+- `GET /runs/{id}` — plan, claims, evidence, reviews, charts, traces, `stop_reason`, `investigation_report` (survives process restart)
 - `GET /runs/{id}/report` — the V2.6 report schema
+
+Tests isolate persistence with `EVIDRA_DATA`. Missing run is 404; corrupt JSON is 422. Completed records are immutable. Console: Investigation History links to `/report?run=`.
+
+Upload limits (V2.9, HTTP multipart only — not fixture/CLI/Olist): env `EVIDRA_MAX_UPLOAD_BYTES` (default 10 MiB), `EVIDRA_MAX_UPLOAD_ROWS` (50_000), `EVIDRA_MAX_UPLOAD_COLUMNS` (64), `EVIDRA_MAX_UPLOAD_CELL_LENGTH` (4096), `EVIDRA_MAX_ZIP_UNCOMPRESSED_BYTES` (10 MiB), `EVIDRA_MAX_ZIP_MEMBERS` (16). Oversized body: **413**. Structural/filename/archive shape: **400**. Investigation `Budget.max_seconds` (60) is separate. See [docs/phases/10-v2.9-limits.md](docs/phases/10-v2.9-limits.md).
+
+V2.8 (JSON files, not Postgres): [docs/phases/10-v2.8-history.md](docs/phases/10-v2.8-history.md).
 
 Olist (Phase 9, local CSVs in `data/raw/`, not committed). Demo:
 

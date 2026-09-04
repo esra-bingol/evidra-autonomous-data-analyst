@@ -95,6 +95,17 @@ th, td { border-bottom: 1px solid var(--line); text-align: left; padding: 0.28re
 .caps span { font-size: 0.7rem; border: 1px solid var(--line); padding: 0.1rem 0.3rem; }
 .caps span.on { border-color: var(--ok); color: #c5d9c2; }
 
+.history {
+  margin: 0.5rem 1.5rem 0;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+.history h2 { font-size: 0.9rem; margin: 0 0 0.4rem; }
+.history ul { list-style: none; margin: 0; padding: 0; }
+.history li { margin: 0.2rem 0; font-size: 0.85rem; }
+.history a { color: var(--accent); }
+
 @media (max-width: 900px) {
   .top { flex-direction: column; gap: 0.6rem; }
   .grid { grid-template-columns: 1fr; }

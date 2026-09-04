@@ -13,7 +13,8 @@ FIXTURES = ROOT / "data" / "fixtures"
 
 
 @pytest.fixture(autouse=True)
-def _clean():
+def _clean(tmp_path, monkeypatch):
+    monkeypatch.setenv("EVIDRA_DATA", str(tmp_path))
     reset_store()
     yield
     reset_store()
@@ -31,6 +32,7 @@ def test_console_is_four_blocks_not_chat(client: TestClient):
     assert "block-question" in html
     assert "block-plan" in html
     assert "block-findings" in html
+    assert "Investigation History" in html
     assert "chatbot" not in html.lower()
     assert "confidence" not in html.lower()
     css = client.get("/static/console.css").text

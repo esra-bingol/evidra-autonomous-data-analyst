@@ -5,6 +5,7 @@ from zipfile import ZipFile
 
 import pandas as pd
 
+from analysis.limits import UploadLimits, extract_zip_member
 from analysis.olist import assemble_investigation_frame, is_olist_dir, load_olist_tables
 from analysis.retail import canonicalize_retail_line_item, looks_like_retail_line_item, try_load_retail
 from analysis.source import SourceBundle
@@ -27,7 +28,7 @@ def load_tabular(path: str | Path) -> pd.DataFrame:
     return _coerce_datetimes(df)
 
 
-def load_source(path: str | Path) -> SourceBundle:
+def load_source(path: str | Path, *, upload_limits: UploadLimits | None = None) -> SourceBundle:
     """Single table, Olist directory, or zip of Olist CSVs. Geolocation is not loaded."""
     path = Path(path)
     if path.is_dir() and is_olist_dir(path):
@@ -48,14 +49,13 @@ def load_source(path: str | Path) -> SourceBundle:
         dest.mkdir(parents=True, exist_ok=True)
         with ZipFile(path) as zf:
             for info in zf.infolist():
-                name = Path(info.filename).name
-                if not name.lower().endswith(".csv"):
-                    continue
-                if ".." in Path(info.filename).parts:
-                    raise ValueError("zip path traversal")
-                target = dest / name
-                target.write_bytes(zf.read(info))
-        return load_source(dest)
+                extract_zip_member(zf, info, dest, upload_limits)
+        if is_olist_dir(dest):
+            return load_source(dest)
+        csvs = sorted(p for p in dest.glob("*.csv") if p.is_file())
+        if len(csvs) == 1:
+            return load_source(csvs[0])
+        raise ValueError("zip must contain a single CSV or Olist tables")
     if path.suffix.lower() in {".xlsx", ".xls"}:
         retail = try_load_retail(path)
         if retail is not None:

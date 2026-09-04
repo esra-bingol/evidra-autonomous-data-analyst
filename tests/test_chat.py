@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from analysis.api import app, reset_store
@@ -9,11 +10,11 @@ from analysis.chat import classify_turn
 from analysis.tools.schemas import V1_TOOLS
 
 
-def setup_function():
+@pytest.fixture(autouse=True)
+def _clean(tmp_path, monkeypatch):
+    monkeypatch.setenv("EVIDRA_DATA", str(tmp_path))
     reset_store()
-
-
-def teardown_function():
+    yield
     reset_store()
 
 

@@ -272,11 +272,38 @@ async function runInvestigation() {
   }
   renderPlan(run);
   renderFindings(run);
+  loadHistory();
+}
+
+async function loadHistory() {
+  const box = $("history-list");
+  const empty = $("history-empty");
+  if (!box) return;
+  const res = await fetch("/runs");
+  if (!res.ok) return;
+  const data = await res.json();
+  box.replaceChildren();
+  const runs = data.runs || [];
+  if (!runs.length) {
+    if (empty) empty.classList.remove("hidden");
+    return;
+  }
+  if (empty) empty.classList.add("hidden");
+  for (const run of runs.slice(0, 12)) {
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `/report?run=${run.id || run.run_id}`;
+    const when = (run.created_at || "").slice(0, 10);
+    a.textContent = `${when} · ${run.question || "—"} · ${run.status || ""}`;
+    li.appendChild(a);
+    box.appendChild(li);
+  }
 }
 
 function init() {
   renderExamples();
   loadFixtures();
+  loadHistory();
   $("btn-fixture").addEventListener("click", registerFixture);
   $("file").addEventListener("change", (ev) => {
     const file = ev.target.files?.[0];
