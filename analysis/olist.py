@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any
-
 import duckdb
 import pandas as pd
 
 from analysis.result import EngineResult
+from analysis.source import SourceBundle
 
 OLIST_TABLES = {
     "olist_orders_dataset.csv": "orders",
@@ -68,13 +66,6 @@ GROUP BY 1
 HAVING COUNT(*) >= 30
 ORDER BY gmv DESC
 """
-
-
-@dataclass
-class SourceBundle:
-    df: pd.DataFrame
-    tables: dict[str, pd.DataFrame] = field(default_factory=dict)
-    meta: dict[str, Any] = field(default_factory=dict)
 
 
 def is_olist_dir(path) -> bool:

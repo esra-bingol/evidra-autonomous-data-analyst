@@ -1,0 +1,54 @@
+{
+  "items": [
+    {
+      "id": "uci-metric-time",
+      "question": "Satış neden değişti?",
+      "checks": ["metric_amount", "time_invoice_date", "compare_periods", "evidence_valid", "completeness"]
+    },
+    {
+      "id": "uci-segment-country",
+      "question": "Satış neden değişti?",
+      "checks": ["country_dimension"]
+    },
+    {
+      "id": "uci-volume-value",
+      "question": "Satış neden değişti?",
+      "checks": ["volume_value"]
+    },
+    {
+      "id": "uci-canonicalize",
+      "question": "Satış neden değişti?",
+      "checks": ["canonicalize_amount", "dropped_cancelled"]
+    },
+    {
+      "id": "uci-completeness-reviewer",
+      "question": "Satış neden değişti?",
+      "checks": ["completeness", "reviews_present", "plan_review"]
+    },
+    {
+      "id": "uci-delivery-abstain",
+      "question": "Teslimat gecikmesi puanı nasıl etkiler?",
+      "checks": ["abstain", "hypotheses_empty", "no_delivery_capability"]
+    },
+    {
+      "id": "uci-profit-abstain",
+      "question": "What is the profit margin by category?",
+      "checks": ["abstain", "hypotheses_empty"]
+    },
+    {
+      "id": "uci-join-review-abstain",
+      "question": "Yüksek ciro, düşük puan kategorileri hangileri?",
+      "checks": ["abstain", "hypotheses_empty"]
+    },
+    {
+      "id": "uci-retention-abstain",
+      "question": "Repeat purchase ile teslimat arasında association var mı?",
+      "checks": ["abstain", "hypotheses_empty"]
+    },
+    {
+      "id": "uci-ranking-country",
+      "question": "Hangi ülke en yüksek?",
+      "checks": ["segment_country", "completeness", "evidence_valid", "no_causal"]
+    }
+  ]
+}

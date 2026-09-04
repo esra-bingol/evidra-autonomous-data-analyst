@@ -5,7 +5,9 @@ from zipfile import ZipFile
 
 import pandas as pd
 
-from analysis.olist import SourceBundle, assemble_investigation_frame, is_olist_dir, load_olist_tables
+from analysis.olist import assemble_investigation_frame, is_olist_dir, load_olist_tables
+from analysis.retail import canonicalize_retail_line_item, looks_like_retail_line_item, try_load_retail
+from analysis.source import SourceBundle
 
 _ENCODINGS = ("utf-8-sig", "utf-8", "latin-1")
 
@@ -54,7 +56,20 @@ def load_source(path: str | Path) -> SourceBundle:
                 target = dest / name
                 target.write_bytes(zf.read(info))
         return load_source(dest)
+    if path.suffix.lower() in {".xlsx", ".xls"}:
+        retail = try_load_retail(path)
+        if retail is not None:
+            retail.df = _coerce_datetimes(retail.df)
+            return retail
     df = load_tabular(path)
+    if looks_like_retail_line_item(df):
+        df, assemble = canonicalize_retail_line_item(df)
+        df = _coerce_datetimes(df)
+        return SourceBundle(
+            df=df,
+            tables={},
+            meta={"kind": "retail_line_item", "n_tables": 1, "assemble": assemble.to_dict()},
+        )
     return SourceBundle(df=df, tables={}, meta={"kind": "single", "n_tables": 1})
 
 

@@ -17,7 +17,7 @@ def detect_intent(question: str) -> str:
         return "retention"
     if any(
         tok in q
-        for tok in ("rank", "ranking", "en yüksek", "hangi bölge", "top region", "sırala")
+        for tok in ("rank", "ranking", "en yüksek", "hangi bölge", "hangi ülke", "which country", "top region", "sırala")
     ):
         return "ranking"
     if any(tok in q for tok in ("review", "puan", "review score")):

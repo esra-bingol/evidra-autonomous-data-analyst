@@ -9,6 +9,7 @@ from analysis.eval.adversarial import run_adversarial
 from analysis.eval.efficiency import build_report, collect_rows
 from analysis.eval.olist_rubric import run_olist_rubric
 from analysis.eval.runner import run_suite
+from analysis.eval.uci_retail import run_uci_retail
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -25,10 +26,12 @@ def main(argv: list[str] | None = None) -> None:
     olist = run_olist_rubric()
     adversarial = run_adversarial()
     adaptive = run_adaptive()
+    uci = run_uci_retail()
     report["olist_rubric"] = olist
     report["adversarial"] = adversarial
     report["adaptive"] = adaptive
-    efficiency = build_report(collect_rows(report, olist, adversarial, adaptive))
+    report["uci_retail"] = uci
+    efficiency = build_report(collect_rows(report, olist, adversarial, adaptive, uci))
     report["efficiency"] = {
         "efficiency_enforced": efficiency["efficiency_enforced"],
         "gate_order": efficiency["gate_order"],
@@ -42,6 +45,7 @@ def main(argv: list[str] | None = None) -> None:
         and olist.get("pass", True)
         and adversarial.get("must_pass_ok", True)
         and adaptive.get("pass", True)
+        and uci.get("pass", True)
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +71,10 @@ def main(argv: list[str] | None = None) -> None:
                 "adaptive": {
                     "pass": (report.get("adaptive") or {}).get("pass"),
                     "n_pass": (report.get("adaptive") or {}).get("n_pass"),
+                },
+                "uci_retail": {
+                    "pass": (report.get("uci_retail") or {}).get("pass"),
+                    "n_pass": (report.get("uci_retail") or {}).get("n_pass"),
                 },
                 "efficiency": {
                     "enforced": (report.get("efficiency") or {}).get("efficiency_enforced"),

@@ -63,7 +63,7 @@ Implementation follows staged work orders with exit criteria. Application code i
 | [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) | Second-pass decisions: accepted, narrowed, not adopted |
 | [docs/phases/](docs/phases/) | Phases 0–10: tasks and exit criteria |
 
-**Data progression:** synthetic fixtures with planted ground truth (correctness) → Superstore (single-table generalization) → Olist (structural multi-table benchmark). Olist is not a V1 dataset.
+**Data progression:** synthetic fixtures with planted ground truth (correctness) → Superstore (single-table generalization) → Olist (structural multi-table benchmark) → V2.7 UCI-schema retail line items (adapter, not V1 golden). Olist is not a V1 dataset.
 
 **V1 includes:** a single Analysis Agent; closed hypothesis templates; capability detection and abstention; research budget and stop conditions; evidence as an engine return type; claim validation; heuristic and optional LLM sharing the same graph; CLI/API and eval as the core product; a later minimal four-block UI.
 
@@ -117,6 +117,8 @@ Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + n
 Conversational surface (V2.5, same engine): `http://127.0.0.1:8765/chat`. Follow-ups reuse the last run; chat text is not SQL.
 
 Investigation report (V2.6): `http://127.0.0.1:8765/report?run={id}`. Built from validated state only; charts bind to evidence and are omitted when they have no purpose. No PDF in this slice.
+
+Retail line-item adapter (V2.7, UCI Online Retail II schema): fixture `uci_retail` / `data/fixtures/retail_line_items.csv`. Optional full workbook in `data/raw/` (not committed). Process rubric: `evals/uci_retail.json`.
 
 API:
 

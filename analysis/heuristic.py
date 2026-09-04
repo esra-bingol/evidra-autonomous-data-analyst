@@ -52,7 +52,7 @@ def _rank_hypotheses(
     roles: list[dict], budget: Budget, intent: str = "why_change"
 ) -> list[Hypothesis]:
     dims = columns_with_role(roles, "dimension")
-    region = column_with_semantic(roles, "region")
+    region = column_with_semantic(roles, "region") or column_with_semantic(roles, "country")
     product = next(
         (r["name"] for r in roles if r["role"] == "dimension" and r["semantic"] == "product"),
         None,
@@ -74,7 +74,13 @@ def _rank_hypotheses(
         )
 
     if intent == "ranking":
-        for dim in dims:
+        geo = [
+            r["name"]
+            for r in roles
+            if r["role"] == "dimension" and r["semantic"] in {"region", "country", "state", "city"}
+        ]
+        rest = [d for d in dims if d not in geo]
+        for dim in geo + rest:
             add("segment_driver", {"dimension": dim})
         return ranked[: budget.max_hypotheses]
 

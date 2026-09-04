@@ -27,6 +27,7 @@ _DIM_TOKENS = {
     "region": "region",
     "state": "state",
     "city": "city",
+    "country": "country",
     "category": "product",
     "subcategory": "product",
     "sub_category": "product",
@@ -71,6 +72,9 @@ def _classify(
             semantic = "ship_date"
         return "time", semantic, "datetime"
 
+    if "unit_price" in key or key in {"unitprice"}:
+        return "ignore", "unit_price", str(series.dtype)
+
     if pd.api.types.is_numeric_dtype(series):
         for token, semantic in _METRIC_TOKENS.items():
             if token in key:
@@ -88,6 +92,11 @@ def _classify(
     if key.endswith("_id") or key in {"order_id", "customer_id", "product_id"}:
         semantic = "order" if "order" in key else "customer" if "customer" in key else "product" if "product" in key else "id"
         return "id", semantic, str(series.dtype)
+
+    if "invoice" in key and "date" not in key:
+        return "id", "order", str(series.dtype)
+    if key in {"stockcode", "stock_code", "sku"} or "stockcode" in key:
+        return "id", "product", str(series.dtype)
 
     if pd.api.types.is_numeric_dtype(series):
         if key in {"postal_code", "zip"} or (nunique == n and series.dtype.kind in "iu"):

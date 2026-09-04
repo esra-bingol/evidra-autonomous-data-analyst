@@ -31,6 +31,7 @@ _FIXTURE_FILES = {
     "missingness": ROOT / "data" / "fixtures" / "missingness.csv",
     "superstore": ROOT / "data" / "raw" / "superstore.csv",
     "olist": ROOT / "data" / "raw",
+    "uci_retail": ROOT / "data" / "fixtures" / "retail_line_items.csv",
 }
 
 _datasets: dict[str, dict[str, Any]] = {}

@@ -252,4 +252,11 @@ Locked in [phases/10-reviewer.md](phases/10-reviewer.md). Not a V1 tool. Sits af
 
 Sections: executive summary, dataset overview, question, plan, research trace, key findings, evidence, driver decomposition, visualizations, statistical results, reviewer decisions, limitations, recommended next investigations.
 
+---
+
+## 11. Retail line-item adapter (V2.7)
+
+Invoice-style tables (UCI Online Retail II schema) are canonicalized in the adapter: missing value metric → `amount` = quantity × unit price; cancelled/negative lines dropped. Core tools are unchanged. Detection is schema tokens, not a `calculate_uci_*` tool.
+
+
 

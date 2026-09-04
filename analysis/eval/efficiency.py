@@ -246,6 +246,7 @@ def collect_rows(
     olist: dict[str, Any] | None = None,
     adversarial: dict[str, Any] | None = None,
     adaptive: dict[str, Any] | None = None,
+    uci: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for item in golden.get("items") or []:
@@ -261,6 +262,10 @@ def collect_rows(
         if row:
             rows.append(row)
     for item in (adaptive or {}).get("items") or []:
+        row = item.get("efficiency_row")
+        if row:
+            rows.append(row)
+    for item in (uci or {}).get("items") or []:
         row = item.get("efficiency_row")
         if row:
             rows.append(row)
