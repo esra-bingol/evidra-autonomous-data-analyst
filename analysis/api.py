@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from analysis.chat import handle_message
+from analysis.report import build_investigation_report
 from analysis.capabilities import detect_capabilities
 from analysis.graph import run_investigation
 from analysis.load import load_source
@@ -199,6 +200,23 @@ def create_app() -> FastAPI:
         if not rec:
             raise HTTPException(404, "run not found")
         return jsonable_encoder(rec)
+
+    @app.get("/runs/{run_id}/report")
+    def get_run_report(run_id: str) -> dict[str, Any]:
+        rec = _runs.get(run_id)
+        if not rec:
+            raise HTTPException(404, "run not found")
+        report = rec.get("investigation_report")
+        if not report:
+            report = build_investigation_report(rec)
+        return jsonable_encoder(report)
+
+    @app.get("/report")
+    def report_page() -> FileResponse:
+        page = UI_DIR / "report.html"
+        if not page.exists():
+            raise HTTPException(500, "report UI missing")
+        return FileResponse(page)
 
     @app.post("/chats")
     def create_chat(body: ChatCreateBody) -> dict[str, Any]:

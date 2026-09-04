@@ -16,7 +16,8 @@ _DETAIL = re.compile(
     re.I,
 )
 _STEPS = re.compile(r"(ara[şs]t[ıi]rma ad[ıi]m|research step|ad[ıi]mlar[ıi]|plan[ıi]? g[öo]ster)", re.I)
-_EVIDENCE = re.compile(r"(evidence|kan[ıi]t|detayl[ıi] rapor|evidence rapor)", re.I)
+_REPORT = re.compile(r"(detayl[ıi] rapor|detailed report|investigation report)", re.I)
+_EVIDENCE = re.compile(r"(evidence|kan[ıi]t|evidence rapor)", re.I)
 _INVESTIGATE = re.compile(
     r"(sat[ıi][şs].*(neden|d[üu][şs]|de[ğg]i[şs])|why did sales|what drove|hangi b[öo]lge|"
     r"teslimat|delivery|gecikme|k[âa]r|profit|retention|tekrar)",
@@ -33,6 +34,8 @@ def classify_turn(text: str, has_run: bool) -> str:
         return "investigate"
     if _STEPS.search(t):
         return "show_steps"
+    if _REPORT.search(t):
+        return "show_report"
     if _EVIDENCE.search(t):
         return "show_evidence"
     if _DRILL.search(t) and not _INVESTIGATE.search(t):
@@ -237,11 +240,16 @@ def handle_message(
     }
     if intent == "show_steps":
         body = _steps_text(last_run)
+    elif intent == "show_report":
+        body = (
+            "Detaylı rapor mevcut investigation state’ten üretildi; yeni claim yok. "
+            "Chat kısa kalır; rapor evidence, plan, reviewer ve grafikleri taşır."
+        )
     elif intent == "show_evidence":
         body = _evidence_text(last_run)
     else:
         body = _focus_text(last_run, text)
-    return {
+    out = {
         "role": "assistant",
         "text": body,
         "intent": intent,
@@ -251,3 +259,6 @@ def handle_message(
         "evidence_ids": _evidence_ids_from_claims(last_run),
         "status": status,
     }
+    if intent == "show_report" and last_run.get("id"):
+        out["report_url"] = f"/report?run={last_run['id']}"
+    return out

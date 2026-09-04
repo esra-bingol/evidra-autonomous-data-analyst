@@ -3,6 +3,7 @@ const EXAMPLES = [
   "West'i daha detaylı incele.",
   "Araştırma adımlarını göster.",
   "Evidence raporunu göster.",
+  "Detaylı raporu göster.",
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -46,6 +47,12 @@ function appendBubble(msg) {
   bubble.className = "bubble";
   bubble.textContent = msg.text || "";
   stack.appendChild(bubble);
+  if (msg.report_url) {
+    const a = document.createElement("a");
+    a.href = msg.report_url;
+    a.textContent = "Open detailed report";
+    stack.appendChild(a);
+  }
   if (msg.role !== "user") {
     const refs = document.createElement("div");
     refs.className = "refs";

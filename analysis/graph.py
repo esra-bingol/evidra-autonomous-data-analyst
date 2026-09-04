@@ -13,6 +13,7 @@ from analysis.evidence.log import EvidenceLog
 from analysis.evidence.models import Claim, Evidence
 from analysis.evidence.pipeline import _draft_claims
 from analysis.evidence.validator import accepted_claims, validate_claim
+from analysis.report import build_investigation_report
 from analysis.reviewer import publish_claims, review_claims
 from analysis.heuristic import (
     WHY_CHANGE,
@@ -55,6 +56,7 @@ class GraphState(TypedDict, total=False):
     research_steps: list
     pending_reason: str | None
     insufficient_kind: str | None
+    investigation_report: dict
 
 
 def _step(state: GraphState, name: str, **kwargs: Any) -> None:
@@ -227,7 +229,27 @@ def review_node(state: GraphState) -> dict:
 
 def report_node(state: GraphState) -> dict:
     state.setdefault("plan", []).append("report")
-    return {"plan": state["plan"]}
+    snapshot = {
+        "path": state.get("path"),
+        "question": state.get("question"),
+        "decision": state.get("decision") or "abstain",
+        "primary_driver": state.get("primary_driver"),
+        "stop_reason": state.get("stop_reason"),
+        "plan": state.get("plan") or [],
+        "hypotheses": [
+            h.model_dump() if hasattr(h, "model_dump") else h for h in (state.get("hypotheses") or [])
+        ],
+        "evidence": state.get("evidence") or [],
+        "claims": state.get("claims") or [],
+        "reviews": state.get("reviews") or [],
+        "traces": state.get("traces") or [],
+        "roles": state.get("roles") or [],
+        "capabilities": state.get("capabilities") or {},
+        "research_steps": state.get("research_steps") or [],
+        "insufficient_kind": state.get("insufficient_kind"),
+        "budget": state.get("budget") or {},
+    }
+    return {"plan": state["plan"], "investigation_report": build_investigation_report(snapshot)}
 
 
 def _route_intersect(state: GraphState) -> str:
@@ -337,6 +359,7 @@ def run_investigation(
         "capabilities": final.get("capabilities") or {},
         "research_steps": final.get("research_steps") or [],
         "insufficient_kind": final.get("insufficient_kind"),
+        "investigation_report": final.get("investigation_report") or {},
     }
 
 

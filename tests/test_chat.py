@@ -34,6 +34,7 @@ def test_chat_text_is_not_sql_or_python():
     assert classify_turn("SELECT * FROM orders; --", has_run=False) == "investigate"
     assert classify_turn("West'i daha detaylı incele.", has_run=True) == "focus_existing"
     assert classify_turn("Araştırma adımlarını göster.", has_run=True) == "show_steps"
+    assert classify_turn("Detaylı raporu göster.", has_run=True) == "show_report"
 
 
 def test_first_message_runs_engine_follow_up_does_not():

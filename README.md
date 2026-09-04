@@ -116,13 +116,15 @@ Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + n
 
 Conversational surface (V2.5, same engine): `http://127.0.0.1:8765/chat`. Follow-ups reuse the last run; chat text is not SQL.
 
+Investigation report (V2.6): `http://127.0.0.1:8765/report?run={id}`. Built from validated state only; charts bind to evidence and are omitted when they have no purpose. No PDF in this slice.
 
 API:
 
 - `POST /datasets` — JSON `{ "fixture_id": "clear_driver" }` or `{ "fixture_id": "olist" }`, or multipart CSV/Excel/zip
 - `GET /datasets/{id}` — overview / capabilities
 - `POST /datasets/{id}/analyze` — `{ "question": "..." }`
-- `GET /runs/{id}` — plan, claims, evidence, charts, traces, `stop_reason`
+- `GET /runs/{id}` — plan, claims, evidence, charts, traces, `stop_reason`, `investigation_report`
+- `GET /runs/{id}/report` — the V2.6 report schema
 
 Olist (Phase 9, local CSVs in `data/raw/`, not committed). Demo:
 

@@ -244,3 +244,12 @@ Locked in [phases/10-reviewer.md](phases/10-reviewer.md). Not a V1 tool. Sits af
 
 `ReviewVerdict.decision`: `accept` \| `reject` \| `revise` \| `abstain`. `revise` may only narrow wording/kind; it may not invent numbers. Claim objects do not gain a numeric confidence field. Strength remains on Evidence.
 
+---
+
+## 10. Investigation report (V2.6)
+
+`investigation_report` is derived **after** validation and review. It does not draft claims or execute tools. Charts are optional, purpose-selected, and must cite `evidence_ids`. Chart y-values come from evidence payloads. A fixed chart count is not part of the contract.
+
+Sections: executive summary, dataset overview, question, plan, research trace, key findings, evidence, driver decomposition, visualizations, statistical results, reviewer decisions, limitations, recommended next investigations.
+
+

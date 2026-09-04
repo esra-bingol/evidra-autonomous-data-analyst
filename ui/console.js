@@ -157,6 +157,12 @@ function renderFindings(run) {
   const stop = run.stop_reason || "—";
   line.textContent = `decision: ${decision} · stop_reason: ${stop}`;
   bar.appendChild(line);
+  if (run.id) {
+    const a = document.createElement("a");
+    a.href = `/report?run=${run.id}`;
+    a.textContent = "Detaylı rapor (V2.6)";
+    bar.appendChild(a);
+  }
   if (decision === "abstain" || stop === "abstain") {
     showBanner("Abstain: capability ∩ soru boş veya sinyal yok. Hipotez uydurulmadı.", "warn");
   }

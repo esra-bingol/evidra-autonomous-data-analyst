@@ -201,7 +201,7 @@ select {
   background: var(--user-bubble);
   border-bottom-right-radius: 0.35rem;
 }
-.stack { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+.stack a { font-size: 0.82rem; font-weight: 600; color: var(--accent); }
 .refs {
   display: flex;
   flex-wrap: wrap;
