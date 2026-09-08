@@ -427,6 +427,20 @@ def create_app() -> FastAPI:
             raise HTTPException(500, "chat UI missing")
         return FileResponse(page)
 
+    @app.get("/dashboard")
+    def dashboard_page() -> FileResponse:
+        page = UI_DIR / "dashboard.html"
+        if not page.exists():
+            raise HTTPException(500, "dashboard UI missing")
+        return FileResponse(page)
+
+    @app.get("/console")
+    def console_page() -> FileResponse:
+        page = UI_DIR / "index.html"
+        if not page.exists():
+            raise HTTPException(500, "console UI missing")
+        return FileResponse(page)
+
     @app.get("/")
     def index() -> FileResponse:
         index = UI_DIR / "index.html"

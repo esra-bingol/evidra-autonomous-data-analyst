@@ -6,8 +6,150 @@ const EXAMPLES = [
   "Detaylı raporu göster.",
 ];
 
+const ICONS = {
+  assistant:
+    '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 8.5h10M7 12h7M8.5 18l-3.5 2v-4.5A7 7 0 0 1 5 5h14v8a5 5 0 0 1-5 5H8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  user:
+    '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.7"/><path d="M6.5 19c.6-3.2 2.4-5 5.5-5s4.9 1.8 5.5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>',
+  empty:
+    '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" aria-hidden="true"><path d="M7 8.5h10M7 12h7M8.5 18l-3.5 2v-4.5A7 7 0 0 1 5 5h14v8a5 5 0 0 1-5 5H8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+
 const $ = (id) => document.getElementById(id);
 const state = { datasetId: null, chatId: null, sending: false };
+
+function themeValue(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function themedFigure(figure) {
+  const palette = [
+    themeValue("--color-accent"),
+    themeValue("--color-success"),
+    themeValue("--color-violet"),
+    themeValue("--color-warning"),
+  ];
+  const text = themeValue("--color-text-secondary");
+  const grid = themeValue("--color-border");
+  const surface = themeValue("--color-surface");
+  const data = (figure.data || []).map((trace, index) => {
+    const color = palette[index % palette.length];
+    return {
+      ...trace,
+      marker: {
+        ...(trace.marker || {}),
+        color: trace.marker?.color || color,
+        line: { width: 0, ...(trace.marker?.line || {}) },
+      },
+      line: { ...(trace.line || {}), color: trace.line?.color || color, width: trace.line?.width || 2.5 },
+    };
+  });
+  const source = figure.layout || {};
+  const axis = { gridcolor: grid, linecolor: grid, zerolinecolor: grid, automargin: true };
+  return {
+    data,
+    layout: {
+      ...source,
+      paper_bgcolor: "transparent",
+      plot_bgcolor: surface,
+      font: { ...(source.font || {}), family: themeValue("--font-sans"), color: text, size: 11 },
+      xaxis: { ...axis, ...(source.xaxis || {}) },
+      yaxis: { ...axis, ...(source.yaxis || {}) },
+      margin: { l: 44, r: 16, t: 40, b: 40, ...(source.margin || {}) },
+      height: 240,
+      showlegend: (source.showlegend ?? data.length > 1),
+      bargap: 0.28,
+      barcornerradius: 6,
+      legend: { orientation: "h", x: 0, y: 1.12, ...(source.legend || {}) },
+      hoverlabel: {
+        bgcolor: themeValue("--color-text"),
+        bordercolor: themeValue("--color-text"),
+        font: { color: surface, family: themeValue("--font-sans") },
+      },
+    },
+  };
+}
+
+function setWorkflowDone() {
+  document.querySelectorAll(".workflow-list li").forEach((item) => {
+    item.classList.remove("active");
+    item.classList.add("done");
+  });
+}
+
+async function renderRunPreview(runId, reportUrl) {
+  const preview = $("run-preview");
+  if (!preview || !runId) return;
+  preview.innerHTML = '<div class="preview-empty"><span class="loader" aria-hidden="true"></span><strong>Analiz hazırlanıyor</strong><p>Bulgular ve görseller yükleniyor.</p></div>';
+  const res = await fetch(`/runs/${runId}`);
+  if (!res.ok) return;
+  const run = await res.json();
+  const report = run.investigation_report || {};
+  const findings = report.key_findings || run.claims || [];
+  const charts = report.visualizations || run.charts || [];
+  const evidence = report.evidence || run.evidence || [];
+
+  preview.replaceChildren();
+  const title = document.createElement("h3");
+  title.className = "preview-title";
+  title.textContent = "Son inceleme";
+  preview.appendChild(title);
+
+  const metrics = document.createElement("div");
+  metrics.className = "metric-grid";
+  const metricValues = [
+    ["Karar", run.decision || "—"],
+    ["Bulgular", String(findings.length)],
+    ["Kanıtlar", String(evidence.length)],
+    ["Grafikler", String(charts.length)],
+  ];
+  for (const [label, value] of metricValues) {
+    const card = document.createElement("div");
+    card.className = "metric-card";
+    const caption = document.createElement("span");
+    caption.textContent = label;
+    const strong = document.createElement("strong");
+    strong.textContent = value;
+    card.append(caption, strong);
+    metrics.appendChild(card);
+  }
+  preview.appendChild(metrics);
+
+  if (findings.length) {
+    const box = document.createElement("div");
+    box.className = "preview-findings";
+    const heading = document.createElement("p");
+    heading.className = "context-label";
+    heading.textContent = "Öne çıkan bulgular";
+    box.appendChild(heading);
+    for (const finding of findings.slice(0, 2)) {
+      const item = document.createElement("div");
+      item.className = "preview-finding";
+      item.textContent = finding.text || "";
+      box.appendChild(item);
+    }
+    preview.appendChild(box);
+  }
+
+  const firstChart = charts.find((chart) => chart.plotly);
+  if (firstChart && window.Plotly) {
+    const chart = document.createElement("div");
+    chart.className = "preview-chart";
+    preview.appendChild(chart);
+    const figure = themedFigure(firstChart.plotly);
+    window.Plotly.newPlot(chart, figure.data, figure.layout, {
+      displayModeBar: false,
+      responsive: true,
+    });
+  }
+
+  const link = document.createElement("a");
+  link.className = "preview-report-link";
+  link.href = reportUrl || `/report?run=${runId}`;
+  link.textContent = "Detaylı raporu aç";
+  preview.appendChild(link);
+  setWorkflowDone();
+}
 
 function showBanner(text, kind) {
   const el = $("banner");
@@ -16,13 +158,12 @@ function showBanner(text, kind) {
   if (kind) el.classList.add(kind);
 }
 
-function fillSuggest(box, dashed) {
+function fillSuggest(box) {
   box.innerHTML = "";
-  EXAMPLES.forEach((q, i) => {
+  EXAMPLES.forEach((q) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = q;
-    if (dashed && i === 1) b.style.borderStyle = "dashed";
     b.addEventListener("click", () => {
       $("msg").value = q;
       syncSend();
@@ -40,7 +181,7 @@ function appendBubble(msg) {
   row.className = `row ${msg.role === "user" ? "user" : "assistant"}`;
   const av = document.createElement("span");
   av.className = `avatar ${msg.role === "user" ? "user" : "assistant"}`;
-  av.textContent = msg.role === "user" ? "S" : "E";
+  av.innerHTML = msg.role === "user" ? ICONS.user : ICONS.assistant;
   const stack = document.createElement("div");
   stack.className = "stack";
   const bubble = document.createElement("p");
@@ -77,6 +218,9 @@ function appendBubble(msg) {
   row.appendChild(stack);
   log.appendChild(row);
   log.scrollTop = log.scrollHeight;
+  if (msg.role !== "user" && msg.run_id) {
+    renderRunPreview(msg.run_id, msg.report_url);
+  }
 }
 
 function setThinking(on) {
@@ -89,7 +233,7 @@ function setThinking(on) {
   row.id = "thinking";
   row.className = "row assistant";
   row.innerHTML =
-    '<span class="avatar assistant">E</span><p class="bubble thinking">İnceleme çalışıyor <span class="dots">…</span></p>';
+    `<span class="avatar assistant">${ICONS.assistant}</span><p class="bubble thinking"><span class="loader" aria-hidden="true"></span><span>İşleniyor</span></p>`;
   $("log").appendChild(row);
   $("log").scrollTop = $("log").scrollHeight;
 }
@@ -101,9 +245,9 @@ function renderHistory(messages) {
     empty.id = "empty";
     empty.className = "empty-card";
     empty.innerHTML =
-      '<p class="hello">Merhaba — ben Evidra. İş sorunu doğal dilde sor; analiz tabloyu bu katman değil investigation engine yapar.</p><p class="help">Ne konusunda yardımcı olayım?</p><div class="suggest" id="examples-empty"></div>';
+      `<span class="empty-icon">${ICONS.empty}</span><p class="hello">Verileriniz hakkında bir soru sorun</p><p class="help">Satış değişimlerini, segmentleri ve mevcut inceleme bulgularını doğal dille keşfedin.</p><div class="suggest" id="examples-empty"></div>`;
     $("log").appendChild(empty);
-    fillSuggest($("examples-empty"), true);
+    fillSuggest($("examples-empty"));
     return;
   }
   for (const msg of messages) appendBubble(msg);
@@ -152,6 +296,7 @@ async function bindDataset() {
   }
   state.chatId = body.id;
   $("dataset-meta").textContent = `${ds.name} bağlı`;
+  $("context-dataset").textContent = ds.name;
   renderHistory([]);
   showBanner("Dataset bağlandı. Follow-up son run state’ini kullanır.");
   syncSend();
@@ -185,8 +330,8 @@ async function sendMessage(ev) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadFixtures();
-  fillSuggest($("examples"), true);
-  fillSuggest($("examples-empty"), true);
+  fillSuggest($("examples"));
+  fillSuggest($("examples-empty"));
   $("btn-fixture").addEventListener("click", bindDataset);
   $("composer").addEventListener("submit", sendMessage);
   $("msg").addEventListener("input", syncSend);

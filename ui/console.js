@@ -9,6 +9,55 @@ const $ = (id) => document.getElementById(id);
 
 const state = { datasetId: null, running: false };
 
+function themeValue(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+function themedFigure(fig) {
+  const palette = [
+    themeValue("--color-accent"),
+    themeValue("--color-success"),
+    themeValue("--color-violet"),
+    themeValue("--color-warning"),
+  ];
+  const text = themeValue("--color-text-secondary");
+  const grid = themeValue("--color-border");
+  const surface = themeValue("--color-surface");
+  const sourceData = fig.data || [];
+  const data = sourceData.map((trace, index) => {
+    const color = palette[index % palette.length];
+    return {
+      ...trace,
+      marker: {
+        ...(trace.marker || {}),
+        color: trace.marker?.color || color,
+        line: { width: 0, ...(trace.marker?.line || {}) },
+      },
+      line: { ...(trace.line || {}), color: trace.line?.color || color, width: trace.line?.width || 2.5 },
+    };
+  });
+  const sourceLayout = fig.layout || {};
+  const axisTheme = { gridcolor: grid, linecolor: grid, zerolinecolor: grid, automargin: true };
+  const layout = {
+    ...sourceLayout,
+    paper_bgcolor: "transparent",
+    plot_bgcolor: surface,
+    font: { ...(sourceLayout.font || {}), family: themeValue("--font-sans"), color: text },
+    xaxis: { ...axisTheme, ...(sourceLayout.xaxis || {}) },
+    yaxis: { ...axisTheme, ...(sourceLayout.yaxis || {}) },
+    margin: { l: 48, r: 24, t: 48, b: 44, ...(sourceLayout.margin || {}) },
+    bargap: 0.28,
+    barcornerradius: 6,
+    legend: { orientation: "h", x: 0, y: 1.12, ...(sourceLayout.legend || {}) },
+    hoverlabel: {
+      bgcolor: themeValue("--color-text"),
+      bordercolor: themeValue("--color-text"),
+      font: { color: surface, family: themeValue("--font-sans") },
+    },
+  };
+  return { data, layout };
+}
+
 function showBanner(text, kind) {
   const el = $("banner");
   el.textContent = text;
@@ -237,8 +286,8 @@ function renderFindings(run) {
     wrap.appendChild(cap);
     charts.appendChild(wrap);
     if (window.Plotly && ch.plotly) {
-      const fig = ch.plotly;
-      window.Plotly.newPlot(el, fig.data || [], fig.layout || {}, { displayModeBar: false, responsive: true });
+      const fig = themedFigure(ch.plotly);
+      window.Plotly.newPlot(el, fig.data, fig.layout, { displayModeBar: false, responsive: true });
     }
   });
 }

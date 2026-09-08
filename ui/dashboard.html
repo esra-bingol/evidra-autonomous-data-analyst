@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Evidra — Genel bakış</title>
+    <link rel="stylesheet" href="/static/dashboard.css?v=1" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+    <script src="/static/dashboard.js?v=1" defer></script>
+  </head>
+  <body>
+    <aside class="rail">
+      <a class="brand" href="/dashboard" aria-label="Evidra ana sayfa">
+        <img src="/static/evidra-logo.svg" alt="" />
+        <div>
+          <p>Evidence intelligence</p>
+          <strong>Evidra</strong>
+        </div>
+      </a>
+      <div class="workspace-switcher">
+        <span class="workspace-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none">
+            <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+        </span>
+        <div><small>Workspace</small><strong>Superstore analizi</strong></div>
+      </div>
+      <nav>
+        <p class="nav-label">Workspace</p>
+        <a class="nav-link active" href="/dashboard" aria-current="page">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M4 4h6v6H4V4Zm10 0h6v10h-6V4ZM4 14h6v6H4v-6Zm10 4h6v2h-6v-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
+          Genel bakış
+        </a>
+        <a class="nav-link" href="/chat">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M5 6.5h14v9H9l-4 3v-12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
+          Analiz sohbeti
+        </a>
+        <a class="nav-link" href="/console">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+          İnceleme konsolu
+        </a>
+        <p class="nav-label nav-spaced">Insights</p>
+        <a class="nav-link" href="#recent">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M12 7v5l3 2M5.6 5.6A9 9 0 1 1 3 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            <path d="M3 5.5v4h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          Son incelemeler
+        </a>
+      </nav>
+      <div class="rail-card">
+        <span aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+            <path d="m5 12 4 4 10-10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+        <strong>Kanıt odaklı</strong>
+        <p>Her cevap doğrulanabilir bulgu, kanıt ve araştırma iziyle sunulur.</p>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Autonomous data analyst</p>
+          <h1>Genel bakış</h1>
+        </div>
+        <div class="topbar-actions">
+          <a class="secondary" href="/console">Veri yükle</a>
+          <a class="primary" href="/chat">
+            Yeni analiz
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+              <path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Sorudan kanıta</p>
+          <h2>Verinizin ne söylediğini<br /><em>gerçekten anlayın.</em></h2>
+          <p>Evidra iş sorularınızı araştırır, değişimin sürücülerini bulur ve sonucu kanıtlarıyla birlikte görselleştirir.</p>
+          <div class="hero-actions">
+            <a class="primary" href="/chat">Verinizle konuşun</a>
+            <a class="text-link" href="/console">İnceleme oluşturun <span>→</span></a>
+          </div>
+        </div>
+        <div class="hero-visual" aria-label="Evidra analiz akışı">
+          <div class="visual-toolbar">
+            <span><img src="/static/evidra-logo.svg" alt="" /> Evidra analysis</span>
+            <small>Validated</small>
+          </div>
+          <div class="question-card">
+            <span>İş sorusu</span>
+            <strong>Bu ay satışlar neden düştü?</strong>
+          </div>
+          <div class="visual-flow">
+            <div><span>01</span><strong>Veriyi incele</strong><small>9,994 satır</small></div>
+            <div><span>02</span><strong>Sürücüyü bul</strong><small>12 hipotez</small></div>
+            <div><span>03</span><strong>Kanıtla</strong><small>8 kanıt</small></div>
+          </div>
+          <div class="visual-result">
+            <div><small>Birincil sürücü</small><strong>West × Office Supplies</strong></div>
+            <span>Güçlü kanıt</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="metrics" aria-label="Workspace metrikleri">
+        <article><span class="metric-icon plum">↗</span><div><small>Toplam inceleme</small><strong id="metric-runs">—</strong></div></article>
+        <article><span class="metric-icon green">✓</span><div><small>Doğrulanmış bulgu</small><strong id="metric-findings">—</strong></div></article>
+        <article><span class="metric-icon amber">◎</span><div><small>Kanıt kaydı</small><strong id="metric-evidence">—</strong></div></article>
+        <article><span class="metric-icon rose">▥</span><div><small>Oluşturulan grafik</small><strong id="metric-charts">—</strong></div></article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel chart-panel">
+          <div class="panel-head">
+            <div><p class="eyebrow">Latest evidence</p><h2>Son analiz görselleri</h2></div>
+            <a href="#recent">Tümünü gör</a>
+          </div>
+          <div id="chart-gallery" class="chart-gallery">
+            <div class="empty-state"><strong>Henüz görsel analiz yok</strong><p>Bir inceleme çalıştırdığınızda grafikler burada görünür.</p></div>
+          </div>
+        </article>
+
+        <article class="panel recent-panel" id="recent">
+          <div class="panel-head">
+            <div><p class="eyebrow">Activity</p><h2>Son incelemeler</h2></div>
+          </div>
+          <div id="recent-list" class="recent-list">
+            <div class="empty-state"><strong>Henüz inceleme yok</strong><p>İlk iş sorunuzu sorarak başlayın.</p></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="how-it-works">
+        <div class="section-intro">
+          <p class="eyebrow">Nasıl çalışır?</p>
+          <h2>Sadece cevap değil,<br />araştırma sunar.</h2>
+        </div>
+        <div class="steps">
+          <article><span>01</span><h3>Sorunuzu sorun</h3><p>Doğal dilde iş problemini anlatın. SQL veya teknik kurgu gerekmez.</p></article>
+          <article><span>02</span><h3>Evidra araştırsın</h3><p>Hipotezleri test eder, dönemleri ve segmentleri karşılaştırır.</p></article>
+          <article><span>03</span><h3>Kanıtla karar verin</h3><p>Grafikler, bulgular ve detaylı raporla sonucu güvenle paylaşın.</p></article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

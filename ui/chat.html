@@ -3,69 +3,187 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Evidra — sohbet yüzeyi</title>
-    <link rel="stylesheet" href="/static/chat.css" />
-    <script src="/static/chat.js" defer></script>
+    <title>Evidra — Sohbet yüzeyi</title>
+    <link rel="stylesheet" href="/static/chat.css?v=5" />
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+    <script src="/static/chat.js?v=5" defer></script>
   </head>
   <body>
     <aside class="rail">
       <div class="brand">
-        <span class="mark" aria-hidden="true">E</span>
+        <span class="mark" aria-hidden="true">
+          <img src="/static/evidra-logo.svg" alt="" />
+        </span>
         <div>
-          <p class="brand-kicker">Investigation assistant</p>
+          <p class="brand-kicker">Data workspace</p>
           <h1>Evidra</h1>
         </div>
       </div>
-      <p class="visually-hidden">Sohbet yüzeyi</p>
-      <section class="rail-card">
-        <h2>Dataset</h2>
-        <label for="fixture">Gömülü fixture</label>
-        <select id="fixture"></select>
-        <button type="button" id="btn-fixture" class="btn-primary">Bağla</button>
-        <p id="dataset-meta" class="meta">Önce dataset bağlayın. Metin SQL olmaz.</p>
-      </section>
-      <nav class="rail-nav">
-        <a href="/">İnceleme konsolu</a>
-      </nav>
-      <p class="rail-note">
-        Engine inceler; bu katman özetler. Follow-up son investigation state’inden devam eder.
-      </p>
-    </aside>
-    <main class="stage">
-      <p id="banner" class="toast hidden" role="status"></p>
-      <article class="panel">
-        <header class="panel-head">
-          <span class="head-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
-              <path d="M9 14.5c1.2 1 4.8 1 6 0M9.5 10h.01M14.5 10h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-            </svg>
-          </span>
-          <div>
-            <p class="head-kicker">Your AI agent</p>
-            <p class="head-title">Sohbet yüzeyi</p>
-          </div>
-        </header>
-        <div id="log" class="thread" aria-live="polite">
-          <div id="empty" class="empty-card">
-            <p class="hello">Merhaba — ben Evidra. İş sorunu doğal dilde sor; analiz tabloyu bu katman değil investigation engine yapar.</p>
-            <p class="help">Ne konusunda yardımcı olayım?</p>
-            <div class="suggest" id="examples-empty"></div>
-          </div>
-        </div>
-        <form id="composer" class="dock">
-          <div class="suggest dock-suggest" id="examples"></div>
-          <div class="composer-shell">
-            <label class="visually-hidden" for="msg">Mesaj</label>
-            <textarea id="msg" rows="1" placeholder="Ask a question about the investigation…"></textarea>
-            <button type="submit" id="btn-send" class="send" disabled aria-label="Gönder">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
-                <path d="M4 12L20 4l-6 16-2.5-6.5L4 12z" fill="currentColor" />
+
+      <div class="workspace-switcher" aria-label="Aktif çalışma alanı">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true">
+          <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+        </svg>
+        <span>Superstore analizi</span>
+      </div>
+
+      <nav class="rail-nav" aria-label="Ana navigasyon">
+        <div class="nav-group">
+          <p class="nav-group-title">Analysis</p>
+          <a class="nav-link" href="/dashboard">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                <path d="M4 4h6v6H4V4Zm10 0h6v10h-6V4ZM4 14h6v6H4v-6Zm10 4h6v2h-6v-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
               </svg>
-            </button>
+            </span>
+            <span class="nav-link-label">Genel bakış</span>
+          </a>
+          <a class="nav-link active" href="/chat" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                <path d="M5 6.5h14v9H9l-4 3v-12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+              </svg>
+            </span>
+            <span class="nav-link-label">Sohbet</span>
+          </a>
+          <a class="nav-link" href="/console">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              </svg>
+            </span>
+            <span class="nav-link-label">İnceleme konsolu</span>
+          </a>
+        </div>
+        <div class="nav-group">
+          <p class="nav-group-title">Settings</p>
+          <a class="nav-link" href="#dataset-panel">
+            <span class="nav-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+                <ellipse cx="12" cy="6" rx="7" ry="3" stroke="currentColor" stroke-width="1.7" />
+                <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" stroke="currentColor" stroke-width="1.7" />
+              </svg>
+            </span>
+            <span class="nav-link-label">Veri kaynağı</span>
+          </a>
+        </div>
+      </nav>
+
+      <section class="rail-card" id="dataset-panel">
+        <h2>Veri kaynağı</h2>
+        <label for="fixture">Örnek veri seti</label>
+        <select id="fixture"></select>
+        <button type="button" id="btn-fixture" class="btn-primary">Veri setini bağla</button>
+        <p id="dataset-meta" class="meta">Sohbete başlamak için bir veri seti bağlayın.</p>
+      </section>
+    </aside>
+
+    <main class="stage">
+      <div class="stage-inner">
+        <header class="workspace-topbar">
+          <div>
+            <p class="head-kicker">Conversational analytics</p>
+            <h2>Verinizle konuşun, kanıtı görün</h2>
+            <p>Bir iş sorusu sorun; Evidra bulguları, kanıtları ve grafikleri aynı çalışma alanında toplasın.</p>
           </div>
-        </form>
-      </article>
+          <a class="topbar-action" href="/console">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true">
+              <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+            Konsolu aç
+          </a>
+        </header>
+        <p id="banner" class="toast hidden" role="status"></p>
+        <div class="analysis-layout">
+          <article class="panel">
+          <header class="panel-head">
+            <span class="head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none">
+                <path d="M7 8.5h10M7 12h7M8.5 18l-3.5 2v-4.5A7 7 0 0 1 5 5h14v8a5 5 0 0 1-5 5H8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+            <div>
+              <p class="head-kicker">Investigation workspace</p>
+              <p class="head-title">Analiz sohbeti</p>
+            </div>
+            <span class="head-status"><span class="status-dot" aria-hidden="true"></span>Hazır</span>
+          </header>
+
+          <div id="log" class="thread" aria-live="polite">
+            <div id="empty" class="empty-card">
+              <span class="empty-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+                  <path d="M7 8.5h10M7 12h7M8.5 18l-3.5 2v-4.5A7 7 0 0 1 5 5h14v8a5 5 0 0 1-5 5H8.5Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+              <p class="hello">Verileriniz hakkında bir soru sorun</p>
+              <p class="help">Satış değişimlerini, segmentleri ve mevcut inceleme bulgularını doğal dille keşfedin.</p>
+              <div class="suggest" id="examples-empty"></div>
+            </div>
+          </div>
+
+          <form id="composer" class="dock">
+            <div class="suggest dock-suggest" id="examples"></div>
+            <div class="composer-shell">
+              <label class="visually-hidden" for="msg">Mesaj</label>
+              <textarea id="msg" rows="1" placeholder="İnceleme hakkında bir soru sorun…"></textarea>
+              <button type="submit" id="btn-send" class="send" disabled aria-label="Gönder">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+                  <path d="m5 12 14-7-4.5 14-3-5.5L5 12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+                  <path d="m11.5 13.5 3-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg>
+              </button>
+            </div>
+          </form>
+          </article>
+
+          <aside class="context-panel" aria-label="Analiz bağlamı">
+            <div class="context-head">
+              <div>
+                <p class="head-kicker">Live context</p>
+                <h2>Analiz özeti</h2>
+              </div>
+              <span class="context-live"><span aria-hidden="true"></span>Canlı</span>
+            </div>
+
+            <section class="context-section dataset-context">
+              <div class="context-section-title">
+                <span class="context-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="17" height="17" fill="none">
+                    <ellipse cx="12" cy="6" rx="7" ry="3" stroke="currentColor" stroke-width="1.7" />
+                    <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" stroke="currentColor" stroke-width="1.7" />
+                  </svg>
+                </span>
+                <div>
+                  <p>Veri kaynağı</p>
+                  <strong id="context-dataset">Henüz bağlanmadı</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="context-section">
+              <p class="context-label">İnceleme akışı</p>
+              <ol class="workflow-list">
+                <li class="active"><span>1</span><div><strong>Soruyu anla</strong><small>İş bağlamını sınıflandır</small></div></li>
+                <li><span>2</span><div><strong>Kanıtı araştır</strong><small>Doğrulanmış araçları çalıştır</small></div></li>
+                <li><span>3</span><div><strong>Sonucu açıkla</strong><small>Bulgu ve görselleri sun</small></div></li>
+              </ol>
+            </section>
+
+            <section id="run-preview" class="run-preview">
+              <div class="preview-empty">
+                <span aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+                    <path d="M4 18V9m5 9v-5m5 5V6m5 12v-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  </svg>
+                </span>
+                <strong>Görsel analiz burada oluşacak</strong>
+                <p>İlk sorunuzdan sonra metrikler, bulgular ve grafikler bu alanda gösterilir.</p>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
     </main>
   </body>
 </html>

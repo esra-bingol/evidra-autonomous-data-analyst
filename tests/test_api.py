@@ -39,6 +39,13 @@ def test_console_is_four_blocks_not_chat(client: TestClient):
     js = client.get("/static/console.js").text
     assert "89%" not in html + css + js
     assert "confidence" not in js.lower()
+    dashboard = client.get("/dashboard")
+    assert dashboard.status_code == 200
+    assert "Genel bakış" in dashboard.text
+    assert "dashboard.js" in dashboard.text
+    console = client.get("/console")
+    assert console.status_code == 200
+    assert "block-upload" in console.text
 
 
 def test_fixture_overview_and_clear_driver_association(client: TestClient):

@@ -3,23 +3,71 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Evidra — investigation report</title>
-    <link rel="stylesheet" href="/static/report.css" />
+    <title>Evidra — Investigation report</title>
+    <link rel="stylesheet" href="/static/report.css?v=5" />
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="/static/report.js" defer></script>
+    <script src="/static/report.js?v=5" defer></script>
   </head>
   <body>
-    <header class="bar">
-      <div>
-        <p class="kicker">Evidra V2.6</p>
-        <h1>Investigation report</h1>
+    <aside class="rail">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <img src="/static/evidra-logo.svg" alt="" />
+        </span>
+        <div>
+          <p class="eyebrow">Data workspace</p>
+          <p class="brand-name">Evidra</p>
+        </div>
       </div>
-      <nav>
-        <a href="/chat">Sohbet</a>
-        <a href="/">Konsol</a>
+      <nav class="rail-nav" aria-label="Ana navigasyon">
+        <p class="nav-heading">Analysis</p>
+        <a class="nav-link" href="/dashboard">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M4 4h6v6H4V4Zm10 0h6v10h-6V4ZM4 14h6v6H4v-6Zm10 4h6v2h-6v-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
+          <span>Genel bakış</span>
+        </a>
+        <a class="nav-link" href="/chat">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M5 6.5h14v9H9l-4 3v-12Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+          </svg>
+          <span>Sohbet</span>
+        </a>
+        <a class="nav-link" href="/console">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+          <span>İnceleme konsolu</span>
+        </a>
+        <p class="nav-heading nav-heading-spaced">Insights</p>
+        <span class="nav-link active" aria-current="page">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+            <path d="M7 3.5h7l4 4V20H7V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
+            <path d="M14 3.5V8h4M10 12h5M10 15.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+          </svg>
+          <span>Detaylı rapor</span>
+        </span>
       </nav>
-    </header>
-    <p id="banner" class="banner">Run id bekleniyor (?run=).</p>
-    <article id="doc" class="doc hidden"></article>
+      <div class="rail-note">
+        <strong>Kanıta dayalı rapor</strong>
+        <p>Her bulgu, doğrulanmış kanıt ve araştırma iziyle birlikte sunulur.</p>
+      </div>
+    </aside>
+
+    <main class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Investigation output</p>
+          <h1>Investigation report</h1>
+          <p>Kararları, temel bulguları, görselleri ve araştırma izini tek görünümde inceleyin.</p>
+        </div>
+        <div class="topbar-actions">
+          <a href="/chat">Sohbete dön</a>
+          <a class="primary" href="/console">Yeni inceleme</a>
+        </div>
+      </header>
+      <p id="banner" class="banner">Run id bekleniyor (?run=).</p>
+      <article id="doc" class="doc hidden"></article>
+    </main>
   </body>
 </html>

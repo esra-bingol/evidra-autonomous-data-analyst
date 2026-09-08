@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">Evidra</title>
+  <rect width="64" height="64" rx="18" fill="#76507C"/>
+  <path d="M17 16h24a5 5 0 0 1 0 10H27v6h10a5 5 0 0 1 0 10H27v6h8a5 5 0 0 1 0 10H22a5 5 0 0 1-5-5V16Z" fill="#FFFDFB"/>
+  <rect x="39" y="39" width="7" height="13" rx="3.5" fill="#D9C5DC"/>
+  <rect x="49" y="31" width="7" height="21" rx="3.5" fill="#E9DCEC"/>
+  <circle cx="52.5" cy="19.5" r="5.5" fill="#C9D9CB"/>
+  <path d="m50 19.5 1.7 1.8 3.3-4" fill="none" stroke="#55765D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
