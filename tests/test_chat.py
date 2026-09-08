@@ -52,7 +52,9 @@ def test_first_message_runs_engine_follow_up_does_not():
     assert msg["status"]["decision"] == "primary_driver"
     assert msg["claim_ids"]
     assert msg["evidence_ids"]
-    assert "West" in msg["text"] or "associated" in msg["text"]
+    assert "West" in msg["text"] or "west" in msg["text"].lower()
+    assert "associated" not in msg["text"].lower()
+    assert msg.get("response", {}).get("answer") == msg["text"]
     run_id = msg["run_id"]
 
     calls = {"n": 0}

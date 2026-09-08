@@ -9,6 +9,7 @@ import re
 from typing import Any, Callable
 
 from analysis.graph import run_investigation
+from analysis.response import compose_response
 
 _DETAIL = re.compile(
     r"(ad[ıi]m|steps?|plan|evidence|kan[ıi]t|rapor|detay|incele|g[öo]ster|daha|"
@@ -93,32 +94,7 @@ def _evidence_ids_from_claims(run: dict[str, Any]) -> list[str]:
 
 
 def summarize_run(run: dict[str, Any]) -> str:
-    if run.get("error"):
-        return f"İnceleme çalışmadı: {run['error']}"
-    decision = run.get("decision") or "abstain"
-    pct = _change_pct(run)
-    claims = run.get("claims") or []
-    claim_text = (claims[0].get("text") if claims else "") or ""
-    if decision == "abstain":
-        extra = " İstersen araştırma adımlarını veya evidence raporunu gösterebilirim."
-        if pct is not None:
-            return f"Satış değişimi {pct}%. Yoğunlaşmış bir sürücü desteklenmiyor; sonuç inconclusive.{extra}"
-        return f"{claim_text or 'Yeterli kanıt yok; sonuç inconclusive.'}{extra}"
-    lead = f"Satışlar {pct}% değişti. " if pct is not None else ""
-    driver = run.get("primary_driver")
-    if decision == "primary_driver" and driver:
-        return (
-            f"{lead}Araştırma sonucunda en güçlü desteklenen bulgu {driver} ile associated bir değişim. "
-            "İstersen araştırma adımlarını veya detaylı evidence raporunu gösterebilirim."
-        )
-    if decision == "value_not_volume":
-        return (
-            f"{lead}Bulgu order volume değil, AOV ile associated. "
-            "İstersen araştırma adımlarını veya evidence raporunu gösterebilirim."
-        )
-    if claim_text:
-        return f"{lead}{claim_text} İstersen araştırma adımlarını veya evidence raporunu gösterebilirim."
-    return f"{lead}Durum: {decision} / {run.get('stop_reason')}."
+    return compose_response(run).answer
 
 
 def _focus_text(run: dict[str, Any], message: str) -> str:
@@ -215,6 +191,7 @@ def handle_message(
 
     if intent == "investigate":
         result = investigate(dataset_path, text.strip())
+        contract = compose_response(result)
         status = {
             "decision": result.get("decision"),
             "stop_reason": result.get("stop_reason"),
@@ -222,7 +199,8 @@ def handle_message(
         }
         return {
             "role": "assistant",
-            "text": summarize_run(result),
+            "text": contract.answer,
+            "response": contract.model_dump(),
             "intent": intent,
             "ran_investigation": True,
             "run": result,

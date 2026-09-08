@@ -133,6 +133,8 @@ Tests isolate persistence with `EVIDRA_DATA`. Missing run is 404; corrupt JSON i
 
 Upload limits (V2.9, HTTP multipart only — not fixture/CLI/Olist): env `EVIDRA_MAX_UPLOAD_BYTES` (default 10 MiB), `EVIDRA_MAX_UPLOAD_ROWS` (50_000), `EVIDRA_MAX_UPLOAD_COLUMNS` (64), `EVIDRA_MAX_UPLOAD_CELL_LENGTH` (4096), `EVIDRA_MAX_ZIP_UNCOMPRESSED_BYTES` (10 MiB), `EVIDRA_MAX_ZIP_MEMBERS` (16). Oversized body: **413**. Structural/filename/archive shape: **400**. Investigation `Budget.max_seconds` (60) is separate. See [docs/phases/10-v2.9-limits.md](docs/phases/10-v2.9-limits.md).
 
+Conversational summary (V2.10-A): chat `message.text` is a deterministic Turkish response from frozen run state (`analysis/response.py`). No new metrics. Intent routing is unchanged. [docs/phases/10-v2.10-a-composer.md](docs/phases/10-v2.10-a-composer.md).
+
 V2.8 (JSON files, not Postgres): [docs/phases/10-v2.8-history.md](docs/phases/10-v2.8-history.md).
 
 Olist (Phase 9, local CSVs in `data/raw/`, not committed). Demo:
