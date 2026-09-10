@@ -87,24 +87,31 @@ function renderReport(run, report) {
   const doc = $("doc");
   doc.replaceChildren();
 
-  const findings = report.key_findings || [];
+  const findings = report.headline_findings || [];
+  const published = report.key_findings || [];
   const evidence = report.evidence || [];
   const visualizations = report.visualizations || [];
+
   const hero = document.createElement("section");
   hero.className = "report-hero";
   const heroCopy = document.createElement("div");
   heroCopy.className = "hero-copy";
-  const heroKicker = document.createElement("p");
-  heroKicker.className = "eyebrow";
-  heroKicker.textContent = "Executive summary";
+  const kicker = document.createElement("p");
+  kicker.className = "eyebrow";
+  kicker.textContent = "Evidra investigation";
   const heroTitle = document.createElement("h2");
-  heroTitle.textContent = report.investigation_question || run.question || "İnceleme özeti";
-  heroCopy.append(heroKicker, heroTitle, para(report.executive_summary || ""));
+  heroTitle.textContent = report.title || "Evidra incelemesi";
+  const question = document.createElement("p");
+  question.className = "hero-question";
+  question.textContent = report.investigation_question || run.question || "";
+  heroCopy.append(kicker, heroTitle);
+  if (question.textContent) heroCopy.appendChild(question);
+  heroCopy.appendChild(para(report.executive_summary || ""));
   const metrics = document.createElement("div");
   metrics.className = "hero-metrics";
   const metricValues = [
-    ["Karar", run.decision || "—"],
-    ["Bulgular", String(findings.length)],
+    ["Sonuç", report.decision_label || run.decision || "—"],
+    ["Bulgular", String(findings.length || published.length)],
     ["Kanıtlar", String(evidence.length)],
     ["Grafikler", String(visualizations.length)],
   ];
@@ -121,12 +128,28 @@ function renderReport(run, report) {
   hero.append(heroCopy, metrics);
   doc.appendChild(hero);
 
+  const sFind = section("Temel bulgular", "wide");
+  if (!findings.length) sFind.appendChild(para("Yayımlanmış bulgu yok."));
+  const ol = document.createElement("ol");
+  ol.className = "headline-findings";
+  for (const f of findings) {
+    const li = document.createElement("li");
+    const title = document.createElement("strong");
+    title.textContent = f.text || "";
+    li.appendChild(title);
+    const chips = document.createElement("div");
+    chips.className = "chips";
+    for (const id of f.evidence_ids || []) chips.appendChild(chip(id));
+    if (chips.childNodes.length) li.appendChild(chips);
+    ol.appendChild(li);
+  }
+  if (findings.length) sFind.appendChild(ol);
+  doc.appendChild(sFind);
+
   const s2 = section("Veri seti özeti");
   const ov = report.dataset_overview || {};
   s2.appendChild(
-    para(
-      `${ov.n_rows ?? "—"} rows · ${ov.n_cols ?? "—"} cols · tables ${ov.n_tables ?? "—"} · ${ov.path || ""}`
-    )
+    para(`${ov.n_rows ?? "—"} satır · ${ov.n_cols ?? "—"} kolon · ${ov.n_tables ?? "—"} tablo`)
   );
   if ((ov.capabilities_present || []).length) {
     const chips = document.createElement("div");
@@ -136,54 +159,34 @@ function renderReport(run, report) {
   }
   doc.appendChild(s2);
 
-  const s3 = section("İnceleme sorusu");
-  s3.appendChild(para(report.investigation_question || run.question || ""));
-  doc.appendChild(s3);
-
   const s4 = section("İnceleme planı", "wide");
-  s4.appendChild(para((report.investigation_plan || []).join(" → ") || "—"));
+  const plan = report.plan_readable || [];
+  if (plan.length) s4.appendChild(list(plan));
+  else s4.appendChild(para((report.investigation_plan || []).join(" → ") || "—"));
   doc.appendChild(s4);
 
-  const s5 = section("Araştırma izi", "wide");
-  const trace = report.research_trace || [];
-  if (!trace.length) s5.appendChild(para("No trace rows."));
-  else {
-    const ul = document.createElement("ul");
-    for (const row of trace.slice(0, 40)) {
-      const li = document.createElement("li");
-      li.textContent = [row.kind, row.template_id || row.tool, row.status || row.summary || row.reason]
-        .filter(Boolean)
-        .join(" · ");
-      ul.appendChild(li);
-    }
-    s5.appendChild(ul);
-  }
-  doc.appendChild(s5);
-
-  const s6 = section("Temel bulgular", "wide");
-  for (const f of findings) {
+  const s6 = section("Yayımlanan iddialar", "wide");
+  for (const f of published) {
     const box = document.createElement("div");
     box.className = "finding";
-    box.appendChild(para(f.text || ""));
+    box.appendChild(para(f.headline || f.text || ""));
     const chips = document.createElement("div");
     chips.className = "chips";
-    if (f.kind) chips.appendChild(chip(f.kind));
     if (f.reviewer_decision) chips.appendChild(chip(`reviewer ${f.reviewer_decision}`));
     for (const id of f.evidence_ids || []) chips.appendChild(chip(id));
-    for (const id of f.chart_ids || []) chips.appendChild(chip(id));
     box.appendChild(chips);
     s6.appendChild(box);
   }
-  if (!findings.length) s6.appendChild(para("Yayımlanmış bulgu yok."));
+  if (!published.length) s6.appendChild(para("Yayımlanmış iddia yok."));
   doc.appendChild(s6);
 
   const s7 = section("Kanıt tablosu", "wide");
   const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th>id</th><th>operation</th><th>strength</th></tr></thead>";
+  table.innerHTML = "<thead><tr><th>id</th><th>işlem</th><th>güç</th></tr></thead>";
   const tb = document.createElement("tbody");
   for (const e of evidence) {
     const tr = document.createElement("tr");
-    for (const c of [e.evidence_id, e.operation, e.strength]) {
+    for (const c of [e.evidence_id, e.operation_label || e.operation, e.strength]) {
       const td = document.createElement("td");
       td.textContent = c || "";
       tr.appendChild(td);
@@ -199,23 +202,22 @@ function renderReport(run, report) {
 
   const s8 = section("Sürücü ayrıştırması");
   const dec = report.driver_decomposition || {};
-  s8.appendChild(para(`Primary associated slice: ${dec.primary_driver || "—"}`));
+  s8.appendChild(para(dec.primary_driver_label || dec.primary_driver || "Öne çıkan dilim yok."));
   if (dec.evidence_id) {
     const p = document.createElement("p");
     p.className = "meta";
-    p.textContent = `evidence ${dec.evidence_id}`;
+    p.textContent = dec.evidence_id;
     s8.appendChild(p);
   }
   doc.appendChild(s8);
 
   const s9 = section("Destekleyici görseller", "wide");
-  const viz = visualizations;
   doc.appendChild(s9);
-  if (!viz.length) s9.appendChild(para("No chart had an analytical purpose on this evidence set."));
-  viz.forEach((ch, i) => {
+  if (!visualizations.length) s9.appendChild(para("Bu kanıt setinde amaçlı grafik yok."));
+  visualizations.forEach((ch, i) => {
     const cap = document.createElement("p");
     cap.className = "meta";
-    cap.textContent = `${ch.id} · ${ch.purpose} · ${ch.kind} · ${(ch.evidence_ids || []).join(", ")}`;
+    cap.textContent = `${ch.title || ch.id} · ${(ch.evidence_ids || []).join(", ")}`;
     s9.appendChild(cap);
     const el = document.createElement("div");
     el.className = "chart";
@@ -229,17 +231,18 @@ function renderReport(run, report) {
 
   const s10 = section("İstatistiksel sonuçlar");
   const stats = report.statistical_results || [];
-  if (!stats.length) s10.appendChild(para("No association_test evidence on this run."));
+  if (!stats.length) s10.appendChild(para("Bu çalışmada ilişki testi yok."));
   for (const st of stats) {
-    s10.appendChild(para(`r=${st.r} · p=${st.p_value} · n=${st.n} · ${st.interpretation} (${st.evidence_id})`));
+    s10.appendChild(para(`r=${st.r} · p=${st.p_value} · n=${st.n} · ilişki, nedensellik değil (${st.evidence_id})`));
   }
   doc.appendChild(s10);
 
   const s11 = section("Reviewer kararları");
   const revs = report.reviewer_decisions || [];
-  if (!revs.length) s11.appendChild(para("No reviewer rows."));
+  if (!revs.length) s11.appendChild(para("Reviewer satırı yok."));
   for (const v of revs) {
-    s11.appendChild(para(`${v.claim_id}: ${v.decision} — ${v.reason || ""}`));
+    const decision = v.decision === "accept" ? "kabul" : v.decision === "reject" ? "red" : v.decision;
+    s11.appendChild(para(`${v.claim_id}: ${decision}${v.reason ? " — " + v.reason : ""}`));
   }
   doc.appendChild(s11);
 
@@ -251,7 +254,7 @@ function renderReport(run, report) {
   s13.appendChild(list(report.recommended_next_investigations));
   doc.appendChild(s13);
 
-  $("banner").textContent = `run ${run.id} · decision ${run.decision} · charts ${viz.length}`;
+  $("banner").textContent = `run ${run.id} · ${report.decision_label || run.decision} · grafikler ${visualizations.length}`;
   doc.classList.remove("hidden");
 }
 

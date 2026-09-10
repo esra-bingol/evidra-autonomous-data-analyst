@@ -276,8 +276,29 @@ a:focus-visible {
 }
 
 .hero-copy h2 {
-  margin: var(--space-1) 0 var(--space-3);
+  margin: var(--space-1) 0 var(--space-2);
   font-size: 1.25rem;
+}
+
+.hero-question {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
+.headline-findings {
+  margin: 0;
+  padding-left: 1.5rem;
+}
+
+.headline-findings li {
+  margin-top: var(--space-3);
+}
+
+.headline-findings strong {
+  display: block;
+  color: var(--color-text);
+  font-size: 0.9375rem;
 }
 
 .hero-copy > p:last-child {

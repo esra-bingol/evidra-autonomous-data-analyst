@@ -20,7 +20,19 @@ def required_capabilities(question: str) -> set[str]:
         return {"causal_analysis"}
     if any(tok in q for tok in ("teslimat", "delivery", "gecikme", "kargo", "ship delay")):
         return {"delivery_analysis"}
-    if any(tok in q for tok in ("retention", "tekrar satın", "repeat purchase", "tekrar alım")):
+    if any(
+        tok in q
+        for tok in (
+            "retention",
+            "tekrar satın",
+            "repeat purchase",
+            "tekrar alım",
+            "müşteri kayb",
+            "musteri kayb",
+            "churn",
+            "kayıp müşteri",
+        )
+    ):
         return {"retention_analysis"}
     if any(tok in q for tok in ("review", "puan", "satisfaction")) and any(
         tok in q for tok in ("kategori", "category", "ciro", "gmv", "tablo", "join")

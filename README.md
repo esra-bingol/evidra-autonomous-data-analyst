@@ -116,7 +116,7 @@ Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + n
 
 Conversational surface (V2.5, same engine): `http://127.0.0.1:8765/chat`. Follow-ups reuse the last run; chat text is not SQL.
 
-Investigation report (V2.6): `http://127.0.0.1:8765/report?run={id}`. Built from validated state only; charts bind to evidence and are omitted when they have no purpose. No PDF in this slice.
+Investigation report (V2.11): `http://127.0.0.1:8765/report?run={id}`. Standalone Turkish document from validated state: executive summary, numbered findings, plan, evidence, reviewer, limitations. Not a long chat transcript. Charts still bind to evidence. [docs/phases/10-v2.11-report.md](docs/phases/10-v2.11-report.md).
 
 Retail line-item adapter (V2.7, UCI Online Retail II schema): fixture `uci_retail` / `data/fixtures/retail_line_items.csv`. Optional full workbook in `data/raw/` (not committed). Process rubric: `evals/uci_retail.json`.
 
@@ -133,7 +133,11 @@ Tests isolate persistence with `EVIDRA_DATA`. Missing run is 404; corrupt JSON i
 
 Upload limits (V2.9, HTTP multipart only — not fixture/CLI/Olist): env `EVIDRA_MAX_UPLOAD_BYTES` (default 10 MiB), `EVIDRA_MAX_UPLOAD_ROWS` (50_000), `EVIDRA_MAX_UPLOAD_COLUMNS` (64), `EVIDRA_MAX_UPLOAD_CELL_LENGTH` (4096), `EVIDRA_MAX_ZIP_UNCOMPRESSED_BYTES` (10 MiB), `EVIDRA_MAX_ZIP_MEMBERS` (16). Oversized body: **413**. Structural/filename/archive shape: **400**. Investigation `Budget.max_seconds` (60) is separate. See [docs/phases/10-v2.9-limits.md](docs/phases/10-v2.9-limits.md).
 
-Conversational summary (V2.10-A): chat `message.text` is a deterministic Turkish response from frozen run state (`analysis/response.py`). No new metrics. Intent routing is unchanged. [docs/phases/10-v2.10-a-composer.md](docs/phases/10-v2.10-a-composer.md).
+Conversational summary (V2.10-A): chat `message.text` is a deterministic Turkish response from frozen run state (`analysis/response.py`). No new metrics. [docs/phases/10-v2.10-a-composer.md](docs/phases/10-v2.10-a-composer.md).
+
+Turn router (V2.10-B): `analysis/router.py` chooses `investigate` / `answer_from_evidence` / `abstain_capability` (plus report/steps/evidence). Follow-ups do not rerun the engine; missing capability abstains before the graph. [docs/phases/10-v2.10-b-router.md](docs/phases/10-v2.10-b-router.md).
+
+Follow-up investigation (V2.10-C): a slice *why* (`Peki West'te neden?`) starts a scoped run in the same chat (`scope`, `parent_run_id`). Status reads stay on frozen evidence. [docs/phases/10-v2.10-c-followup.md](docs/phases/10-v2.10-c-followup.md).
 
 V2.8 (JSON files, not Postgres): [docs/phases/10-v2.8-history.md](docs/phases/10-v2.8-history.md).
 

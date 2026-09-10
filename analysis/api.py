@@ -378,13 +378,14 @@ def create_app() -> FastAPI:
         user_msg = {"role": "user", "text": text}
         chat["messages"].append(user_msg)
 
-        def _investigate(path: str, question: str) -> dict[str, Any]:
-            return run_investigation(path, question)
+        def _investigate(path: str, question: str, scope: dict[str, str] | None = None) -> dict[str, Any]:
+            return run_investigation(path, question, scope=scope)
 
         turn = handle_message(
             text=text,
             dataset_path=ds["path"],
             last_run=last,
+            capabilities=ds.get("capabilities"),
             investigate=_investigate,
         )
         if turn.get("ran_investigation"):

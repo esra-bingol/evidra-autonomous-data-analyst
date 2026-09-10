@@ -50,7 +50,7 @@ def test_investigation_persists_and_survives_memory_reset(client: TestClient):
     assert again["claims"]
     assert again["reviews"]
     assert again["traces"]
-    assert again["investigation_report"]["schema_version"] == "v2.6"
+    assert again["investigation_report"]["schema_version"] == "v2.11"
     assert again["question"] == "Satış neden değişti?"
     report = client.get(f"/runs/{rid}/report").json()
     assert report["key_findings"]
@@ -102,7 +102,7 @@ def test_chat_last_run_survives_reset(client: TestClient):
     assert hist["last_run_id"] == rid
     follow = client.post(
         f"/chats/{chat['id']}/messages",
-        json={"text": "West'i daha detaylı incele."},
+        json={"text": "Peki West'te durum nasıl?"},
     ).json()["message"]
     assert follow["ran_investigation"] is False
     assert follow["run_id"] == rid

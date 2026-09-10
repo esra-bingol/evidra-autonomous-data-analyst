@@ -26,6 +26,8 @@ from analysis.heuristic import (
 )
 from analysis.load import load_source
 from analysis.policy import apply_llm_rank, detect_intent, silent_llm_fallback
+from analysis.scope import apply_scope
+from analysis.tools.runtime import ToolContext, call_tool
 from analysis.tools.runtime import ToolContext, call_tool
 from analysis.tools.schemas import Budget
 
@@ -312,10 +314,15 @@ def run_investigation(
     budget: Budget | None = None,
     policy: str = "heuristic",
     llm_rank: list[dict[str, Any]] | None = None,
+    scope: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     src = load_source(path)
+    frame = src.df
+    applied = dict(scope) if scope else None
+    if applied:
+        frame = apply_scope(src.df, applied)
     ctx = ToolContext(
-        df=src.df,
+        df=frame,
         log=EvidenceLog(),
         budget=budget or Budget(),
         tables=src.tables,
@@ -360,6 +367,7 @@ def run_investigation(
         "research_steps": final.get("research_steps") or [],
         "insufficient_kind": final.get("insufficient_kind"),
         "investigation_report": final.get("investigation_report") or {},
+        "scope": applied,
     }
 
 

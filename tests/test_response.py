@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from analysis.graph import run_investigation
-from analysis.response import ResponseContract, compose_response, validate_response
+from analysis.response import ResponseContract, compose_followup, compose_response, validate_response
+from analysis.router import CAUSAL_LIMIT
 
 FIXTURES = Path(__file__).resolve().parents[1] / "data" / "fixtures"
 
@@ -103,6 +104,29 @@ def test_validator_rejects_causal_wording():
     ok, reasons = validate_response(bad, run)
     assert ok is False
     assert "causal_language" in reasons
+
+
+def test_followup_causal_probe_uses_limit_sentence():
+    run = run_investigation(FIXTURES / "clear_driver.csv", "Satış neden değişti?")
+    contract = compose_followup(run, "Bunun nedeni ne?")
+    assert contract.answer == CAUSAL_LIMIT
+    ok, reasons = validate_response(contract, run)
+    assert ok, reasons
+
+
+def test_followup_ranking_and_slice_stay_grounded():
+    run = run_investigation(FIXTURES / "clear_driver.csv", "Satış neden değişti?")
+    worst = compose_followup(run, "En kötü kategori hangisi?")
+    assert "associated" not in worst.answer.lower()
+    assert "segment_by" not in worst.answer
+    assert "office" in worst.answer.lower() or "kategori" in worst.answer.lower()
+    ok, reasons = validate_response(worst, run)
+    assert ok, reasons
+    west = compose_followup(run, "Peki West'te durum nasıl?")
+    assert "west" in west.answer.lower()
+    assert "segment_by" not in west.answer
+    ok, reasons = validate_response(west, run)
+    assert ok, reasons
 
 
 def test_limitation_survives_from_report():

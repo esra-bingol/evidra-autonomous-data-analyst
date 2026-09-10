@@ -8,7 +8,8 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from analysis.evidence.validator import _CAUSAL, _FAKE_CONFIDENCE, _numbers_supported, _walk_numbers
-from analysis.report import build_investigation_report
+from analysis.router import CAUSAL_LIMIT, is_causal_probe, is_ranking_question, mentioned_labels
+from analysis.scope import scope_lead
 
 FALLBACK = (
     "Bu incelemeden güvenilir bir sonuç çıkaramıyorum. "
@@ -41,6 +42,170 @@ def compose_response(run: dict[str, Any]) -> ResponseContract:
     return _fallback_contract(run)
 
 
+def compose_followup(run: dict[str, Any], message: str) -> ResponseContract:
+    """Answer a follow-up from frozen run state. Does not invent metrics."""
+    if is_causal_probe(message):
+        draft = _causal_limit_contract(run)
+    elif is_ranking_question(message):
+        draft = _ranking_contract(run, message)
+    else:
+        labels = mentioned_labels(message, run)
+        if labels:
+            draft = _slice_contract(run, labels)
+        else:
+            draft = compose_response(run)
+            return draft
+    ok, _reasons = validate_response(draft, run)
+    if ok:
+        return draft
+    return compose_response(run)
+
+
+def compose_scoped(run: dict[str, Any], scope: dict[str, str]) -> ResponseContract:
+    inner = compose_response(run)
+    lead = scope_lead(scope)
+    if not lead:
+        return inner
+    draft = inner.model_copy(update={"answer": f"{lead} {inner.answer}".strip()})
+    ok, _reasons = validate_response(draft, run)
+    if ok:
+        return draft
+    return inner
+
+
+def _causal_limit_contract(run: dict[str, Any]) -> ResponseContract:
+    refs = _evidence_ids(run, {"compare_periods", "segment_by", "association_test"})
+    return ResponseContract(
+        answer=CAUSAL_LIMIT,
+        key_findings=[CAUSAL_LIMIT],
+        evidence_refs=_uniq(refs),
+        limitations=[CAUSAL_LIMIT],
+        suggested_followups=["Detaylı raporu göster."],
+    )
+
+
+def _ranking_contract(run: dict[str, Any], message: str) -> ResponseContract:
+    field = _ranking_field(message)
+    row, eid = _worst_row(run, field)
+    if not row:
+        return compose_response(run)
+    label = str(row.get(field) or _row_label(row))
+    share_pct = _share_as_percent(row.get("share_of_change"))
+    if field == "category":
+        lead = f"Mevcut incelemede en olumsuz kategori {label}."
+    elif field == "region":
+        lead = f"Mevcut incelemede en olumsuz bölge {label}."
+    else:
+        lead = f"Mevcut incelemede öne çıkan dilim {_driver_phrase(label)}."
+    parts = [lead]
+    findings = [lead]
+    if share_pct is not None:
+        parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)}'ini oluşturuyor.")
+        findings.append(f"Katkı payı %{_fmt(share_pct)}.")
+    parts.append(CAUSAL_LIMIT)
+    return ResponseContract(
+        answer=" ".join(parts),
+        key_findings=findings,
+        evidence_refs=_uniq([eid] if eid else _evidence_ids(run, {"segment_by"})),
+        limitations=[CAUSAL_LIMIT],
+        suggested_followups=["Detaylı raporu göster."],
+    )
+
+
+def _slice_contract(run: dict[str, Any], labels: list[str]) -> ResponseContract:
+    row, eid = _matching_row(run, labels)
+    if not row:
+        return compose_response(run)
+    loc = _driver_phrase(_row_label(row))
+    share_pct = _share_as_percent(row.get("share_of_change"))
+    parts = [f"Mevcut kanıtlara göre {loc} diliminde en güçlü desteklenen sinyal duruyor."]
+    findings = [f"Odak: {loc}."]
+    if share_pct is not None:
+        parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)}'ini oluşturuyor.")
+        findings.append(f"Katkı payı %{_fmt(share_pct)}.")
+    parts.append(CAUSAL_LIMIT)
+    return ResponseContract(
+        answer=" ".join(parts),
+        key_findings=findings,
+        evidence_refs=_uniq([eid] if eid else _evidence_ids(run, {"segment_by"})),
+        limitations=[CAUSAL_LIMIT],
+        suggested_followups=["Detaylı raporu göster."],
+    )
+
+
+def _ranking_field(message: str) -> str | None:
+    t = message.lower()
+    if "kategori" in t or "category" in t:
+        return "category"
+    if "bölge" in t or "bolge" in t or "region" in t:
+        return "region"
+    return None
+
+
+def _segment_entries(run: dict[str, Any]) -> list[tuple[dict[str, Any], str | None, list[str]]]:
+    out: list[tuple[dict[str, Any], str | None, list[str]]] = []
+    for ev in run.get("evidence") or []:
+        if ev.get("operation") != "segment_by":
+            continue
+        dims = list((ev.get("filters") or {}).get("dimensions") or [])
+        eid = ev.get("evidence_id")
+        for row in (ev.get("value") or {}).get("rows") or []:
+            out.append((row, eid, dims))
+    return out
+
+
+def _worst_row(run: dict[str, Any], field: str | None) -> tuple[dict[str, Any] | None, str | None]:
+    best: tuple[dict[str, Any], str | None] | None = None
+    best_change: float | None = None
+    for row, eid, dims in _segment_entries(run):
+        if field and field not in row and field not in dims:
+            continue
+        if field and field not in row:
+            continue
+        change = row.get("change")
+        if change is None:
+            continue
+        mag = float(change)
+        if best_change is None or mag < best_change:
+            best_change = mag
+            best = (row, eid)
+    if best:
+        return best
+    return None, None
+
+
+def _matching_row(run: dict[str, Any], labels: list[str]) -> tuple[dict[str, Any] | None, str | None]:
+    best: tuple[dict[str, Any], str | None] | None = None
+    best_change: float | None = None
+    for row, eid, _dims in _segment_entries(run):
+        blob = " ".join(str(v) for v in row.values())
+        if not all(lab in blob for lab in labels if lab):
+            continue
+        change = row.get("change")
+        mag = float(change) if change is not None else 0.0
+        if best_change is None or mag < best_change:
+            best_change = mag
+            best = (row, eid)
+    if best:
+        return best
+    return None, None
+
+
+def _row_label(row: dict[str, Any]) -> str:
+    parts = [
+        str(row[k])
+        for k in ("region", "category", "segment", "country")
+        if row.get(k)
+    ]
+    if len(parts) >= 2:
+        return f"{parts[0]} × {parts[1]}"
+    if parts:
+        return parts[0]
+    skip = {"previous", "current", "change", "share_of_change"}
+    leftover = [str(v) for k, v in row.items() if k not in skip and v not in (None, "")]
+    return " × ".join(leftover[:2]) if leftover else ""
+
+
 def validate_response(contract: ResponseContract, run: dict[str, Any]) -> tuple[bool, list[str]]:
     reasons: list[str] = []
     evid_ids = {e.get("evidence_id") for e in (run.get("evidence") or []) if e.get("evidence_id")}
@@ -64,7 +229,6 @@ def validate_response(contract: ResponseContract, run: dict[str, Any]) -> tuple[
 
 
 def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
-    report = run.get("investigation_report") or build_investigation_report(run)
     accepted = _accepted_claims(run)
     refs: list[str] = []
     findings: list[str] = []
@@ -151,7 +315,7 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
             parts.append(_soften_claim(text))
         refs.extend(_claim_evidence_ids(accepted))
 
-    limitations = _limitations_tr(run, report, decision)
+    limitations = _limitations_tr(run, decision)
     if limitations:
         closing = limitations[0] if decision == "abstain" else _pick_limitation(limitations)
         if closing not in parts:
@@ -167,10 +331,9 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
 
 
 def _fallback_contract(run: dict[str, Any]) -> ResponseContract:
-    report = run.get("investigation_report") or {}
     return ResponseContract(
         answer=FALLBACK,
-        limitations=_limitations_tr(run, report, run.get("decision") or "abstain"),
+        limitations=_limitations_tr(run, run.get("decision") or "abstain"),
         suggested_followups=["Detaylı raporu göster."],
     )
 
@@ -300,7 +463,7 @@ def _normalize_decimals(text: str) -> str:
     return _COMMA_DEC.sub(r"\1.\2", text)
 
 
-def _limitations_tr(run: dict[str, Any], report: dict[str, Any], decision: str) -> list[str]:
+def _limitations_tr(run: dict[str, Any], decision: str) -> list[str]:
     notes: list[str] = []
     if decision == "abstain" or run.get("stop_reason") == "abstain":
         notes.append("Yoğunlaşmış bir sürücü bu incelemede desteklenmiyor.")
@@ -312,9 +475,10 @@ def _limitations_tr(run: dict[str, Any], report: dict[str, Any], decision: str) 
         notes.append("Araştırma bütçesi daha güçlü bir sonuca ulaşmadan doldu.")
     if run.get("insufficient_kind") == "multiple_plausible_drivers":
         notes.append("Birden fazla dilim sürücü eşiğini geçiyor.")
-    for raw in report.get("limitations") or []:
-        low = str(raw).lower()
-        if "truncated" in low or "incomplete" in low:
+    for ev in run.get("evidence") or []:
+        if ev.get("operation") != "current_coverage":
+            continue
+        if (ev.get("value") or {}).get("truncated_current_period"):
             notes.append("Güncel dönem penceresi eksik olabilir.")
     return _uniq(notes)[:5]
 
