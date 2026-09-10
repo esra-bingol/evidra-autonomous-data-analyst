@@ -1,11 +1,11 @@
-"""V2.11 investigation report. Reads frozen run state; does not draft claims or run tools."""
+"""Investigation report. Reads frozen run state; does not draft claims or run tools."""
 
 from __future__ import annotations
 
 import re
 from typing import Any
 
-import plotly.graph_objects as go
+from analysis.charts import build_charts
 
 SECTION_KEYS = (
     "executive_summary",
@@ -60,17 +60,6 @@ OPERATION_LABELS = {
     "detect_capabilities": "Yetenekler",
 }
 
-_SKIP_CHART_OPS = frozenset(
-    {
-        "inspect_dataset",
-        "profile_dataset",
-        "detect_capabilities",
-        "quality_score",
-        "current_coverage",
-        "create_visualization",
-        "generate_report",
-    }
-)
 _ENGINE_LEAK = re.compile(
     r"\b(associated|primary_driver|share_of_change|compare_periods|segment_by|"
     r"decompose_volume_value|value_not_volume)\b",
@@ -82,11 +71,11 @@ def build_investigation_report(run: dict[str, Any]) -> dict[str, Any]:
     evidence = list(run.get("evidence") or [])
     claims = list(run.get("claims") or [])
     reviews = list(run.get("reviews") or [])
-    visualizations = _visualizations_from_evidence(evidence)
+    visualizations = build_charts(run)
     findings = _findings(run, claims, reviews, visualizations)
     headlines = _headline_findings(run, evidence)
     return {
-        "schema_version": "v2.11",
+        "schema_version": "v2.12",
         "source": "validated_investigation_state",
         "title": _title(run),
         "decision_label": DECISION_LABELS.get(run.get("decision") or "abstain", run.get("decision") or "abstain"),
@@ -436,156 +425,8 @@ def _recommended_next(run: dict[str, Any]) -> list[str]:
     return items[:6]
 
 
-def _visualizations_from_evidence(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    charts: list[dict[str, Any]] = []
-    for ev in evidence:
-        op = ev.get("operation")
-        if op in _SKIP_CHART_OPS or not ev.get("evidence_id"):
-            continue
-        built = _chart_for_evidence(ev)
-        if built:
-            built["id"] = f"viz-{len(charts) + 1}"
-            charts.append(built)
-    return charts
-
-
-def _chart_for_evidence(ev: dict[str, Any]) -> dict[str, Any] | None:
-    op = ev.get("operation")
-    eid = ev["evidence_id"]
-    val = ev.get("value") or {}
-    if op == "compare_periods":
-        prev, curr = val.get("previous"), val.get("current")
-        if prev is None or curr is None:
-            return None
-        return _figure(
-            kind="bar",
-            purpose="category_comparison",
-            title=f"Dönem toplamları ({val.get('metric') or 'metrik'})",
-            evidence_ids=[eid],
-            fig=go.Figure(
-                go.Bar(x=["previous", "current"], y=[float(prev), float(curr)])
-            ),
-        )
-    if op == "segment_by":
-        rows = val.get("rows") or []
-        if len(rows) < 2:
-            return None
-        dims = ((ev.get("filters") or {}).get("dimensions")) or []
-        if len(dims) >= 2:
-            labeled = []
-            for row in rows:
-                label = " × ".join(str(row.get(d, "")) for d in dims)
-                labeled.append((label, float(row.get("share_of_change") or 0)))
-            labeled.sort(key=lambda p: abs(p[1]), reverse=True)
-            labeled = labeled[:8]
-            if not any(v != 0 for _, v in labeled):
-                return None
-            return _figure(
-                kind="bar",
-                purpose="driver_decomposition",
-                title="Dilimlerin değişim payı",
-                evidence_ids=[eid],
-                fig=go.Figure(go.Bar(x=[a for a, _ in labeled], y=[b for _, b in labeled])),
-            )
-        dim = dims[0] if dims else next((k for k in rows[0] if k not in {"previous", "current", "change", "share_of_change"}), "segment")
-        xs = [str(r.get(dim, "")) for r in rows[:12]]
-        ys = [float(r.get("change") or 0) for r in rows[:12]]
-        if not any(ys):
-            return None
-        return _figure(
-            kind="bar",
-            purpose="segment_comparison",
-            title=f"{dim} bazında değişim",
-            evidence_ids=[eid],
-            fig=go.Figure(go.Bar(x=xs, y=ys)),
-        )
-    if op == "decompose_volume_value":
-        names, ys = [], []
-        for key, label in (
-            ("sales_change_pct", "sales %"),
-            ("volume_change_pct", "volume %"),
-            ("aov_change_pct", "AOV %"),
-        ):
-            if val.get(key) is None:
-                continue
-            names.append(label)
-            ys.append(float(val[key]))
-        if len(ys) < 2:
-            return None
-        return _figure(
-            kind="bar",
-            purpose="contribution",
-            title="Hacim ve sepet tutarı değişimi",
-            evidence_ids=[eid],
-            fig=go.Figure(go.Bar(x=names, y=ys)),
-        )
-    if op == "detect_anomalies":
-        monthly = val.get("monthly_z_outliers") or []
-        if len(monthly) < 1:
-            return None
-        return _figure(
-            kind="bar",
-            purpose="distribution",
-            title="Aylık z sapmaları (kanıttan)",
-            evidence_ids=[eid],
-            fig=go.Figure(
-                go.Bar(
-                    x=[str(r.get("period")) for r in monthly],
-                    y=[float(r.get("z")) for r in monthly],
-                )
-            ),
-        )
-    if op == "run_sql":
-        rows = val.get("rows") or []
-        if len(rows) < 2:
-            return None
-        keys = [k for k in rows[0].keys()]
-        num_keys = [k for k in keys if all(_is_number(r.get(k)) for r in rows[:8])]
-        cat_keys = [k for k in keys if k not in num_keys]
-        if not num_keys or not cat_keys:
-            return None
-        xs = [str(r.get(cat_keys[0], "")) for r in rows[:12]]
-        ys = [float(r.get(num_keys[0])) for r in rows[:12]]
-        return _figure(
-            kind="bar",
-            purpose="category_comparison",
-            title=f"{num_keys[0]} by {cat_keys[0]} (SQL evidence)",
-            evidence_ids=[eid],
-            fig=go.Figure(go.Bar(x=xs, y=ys)),
-        )
-    return None
-
-
-def _figure(
-    *,
-    kind: str,
-    purpose: str,
-    title: str,
-    evidence_ids: list[str],
-    fig: go.Figure,
-) -> dict[str, Any]:
-    fig.update_layout(title=title, margin=dict(l=40, r=20, t=48, b=40), height=320)
-    return {
-        "kind": kind,
-        "purpose": purpose,
-        "title": title,
-        "evidence_ids": evidence_ids,
-        "plotly": fig.to_plotly_json(),
-    }
-
-
 def _first(evidence: list[dict[str, Any]], operation: str) -> dict[str, Any] | None:
     for ev in evidence:
         if ev.get("operation") == operation:
             return ev
     return None
-
-
-def _is_number(val: Any) -> bool:
-    if isinstance(val, bool) or val is None:
-        return False
-    try:
-        float(val)
-        return True
-    except (TypeError, ValueError):
-        return False

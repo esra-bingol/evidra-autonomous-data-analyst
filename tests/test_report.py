@@ -29,7 +29,7 @@ def test_report_uses_published_claims_only():
     run = run_investigation(FIXTURES / "clear_driver.csv", "Satış neden değişti?")
     report = run["investigation_report"]
     assert set(SECTION_KEYS) <= set(report)
-    assert report["schema_version"] == "v2.11"
+    assert report["schema_version"] == "v2.12"
     assert report["source"] == "validated_investigation_state"
     rejected = {
         v["claim_id"]
@@ -70,6 +70,13 @@ def test_charts_bind_evidence_and_are_not_a_fixed_count():
         assert ch["evidence_ids"]
         assert set(ch["evidence_ids"]) <= evid_ids
         assert ch["purpose"]
+        assert ch.get("kind") in {"line", "bar", "waterfall"}
+        published = {
+            f["claim_id"]
+            for f in report["key_findings"]
+            if f.get("claim_id")
+        }
+        assert set(ch.get("claim_ids") or []) <= published
         ys = []
         for trace in (ch.get("plotly") or {}).get("data") or []:
             ys.extend(_flatten_numbers(trace.get("y")))

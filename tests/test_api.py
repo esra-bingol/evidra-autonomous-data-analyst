@@ -70,7 +70,7 @@ def test_fixture_overview_and_clear_driver_association(client: TestClient):
     fetched = client.get(f"/runs/{body['id']}")
     assert fetched.status_code == 200
     assert fetched.json()["stop_reason"] == body["stop_reason"]
-    assert body["investigation_report"]["schema_version"] == "v2.11"
+    assert body["investigation_report"]["schema_version"] == "v2.12"
     assert body["investigation_report"]["key_findings"]
     page = client.get("/report")
     assert page.status_code == 200

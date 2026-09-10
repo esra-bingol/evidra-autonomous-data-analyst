@@ -116,7 +116,7 @@ Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + n
 
 Conversational surface (V2.5, same engine): `http://127.0.0.1:8765/chat`. Follow-ups reuse the last run; chat text is not SQL.
 
-Investigation report (V2.11): `http://127.0.0.1:8765/report?run={id}`. Standalone Turkish document from validated state: executive summary, numbered findings, plan, evidence, reviewer, limitations. Not a long chat transcript. Charts still bind to evidence. [docs/phases/10-v2.11-report.md](docs/phases/10-v2.11-report.md).
+Investigation report (V2.11–V2.12): `http://127.0.0.1:8765/report?run={id}`. Standalone Turkish document from validated state. Charts are chosen from the question and evidence (`analysis/charts.py`): trend is a line, slice comparison is a bar, contribution is a waterfall. Y values still come only from evidence. [docs/phases/10-v2.12-visualization.md](docs/phases/10-v2.12-visualization.md).
 
 Retail line-item adapter (V2.7, UCI Online Retail II schema): fixture `uci_retail` / `data/fixtures/retail_line_items.csv`. Optional full workbook in `data/raw/` (not committed). Process rubric: `evals/uci_retail.json`.
 

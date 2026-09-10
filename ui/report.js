@@ -36,6 +36,13 @@ function themeValue(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+function kindLabel(kind) {
+  if (kind === "line") return "çizgi";
+  if (kind === "waterfall") return "şelale";
+  if (kind === "bar") return "sütun";
+  return kind || "grafik";
+}
+
 function themedFigure(figure) {
   const palette = [
     themeValue("--color-accent"),
@@ -217,7 +224,7 @@ function renderReport(run, report) {
   visualizations.forEach((ch, i) => {
     const cap = document.createElement("p");
     cap.className = "meta";
-    cap.textContent = `${ch.title || ch.id} · ${(ch.evidence_ids || []).join(", ")}`;
+    cap.textContent = `${ch.title || ch.id} · ${kindLabel(ch.kind)} · ${(ch.evidence_ids || []).join(", ")}`;
     s9.appendChild(cap);
     const el = document.createElement("div");
     el.className = "chart";

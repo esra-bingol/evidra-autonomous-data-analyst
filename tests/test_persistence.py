@@ -50,7 +50,7 @@ def test_investigation_persists_and_survives_memory_reset(client: TestClient):
     assert again["claims"]
     assert again["reviews"]
     assert again["traces"]
-    assert again["investigation_report"]["schema_version"] == "v2.11"
+    assert again["investigation_report"]["schema_version"] == "v2.12"
     assert again["question"] == "Satış neden değişti?"
     report = client.get(f"/runs/{rid}/report").json()
     assert report["key_findings"]

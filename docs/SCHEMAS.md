@@ -250,7 +250,7 @@ Locked in [phases/10-reviewer.md](phases/10-reviewer.md). Not a V1 tool. Sits af
 
 `investigation_report` is derived **after** validation and review. It does not draft claims or execute tools. The document is a standalone analytical record, not a long chat transcript. Charts are optional, purpose-selected, and must cite `evidence_ids`. Chart y-values come from evidence payloads. A fixed chart count is not part of the contract.
 
-`schema_version` is `v2.11`. Extra fields: `title`, `headline_findings`, `plan_readable`, `decision_label`. The original 13 sections remain.
+`schema_version` is `v2.12`. Extra fields: `title`, `headline_findings`, `plan_readable`, `decision_label`. Visualizations are selected by question and evidence operation (line / bar / waterfall), not by dumping every tool payload. Each chart cites `evidence_ids` and may cite published `claim_ids`. The original 13 sections remain.
 
 ---
 
