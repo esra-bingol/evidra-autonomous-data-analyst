@@ -1,45 +1,45 @@
 # Evidra
 
-**Kanıta bağlı, otonom veri inceleme motoru**
+**Evidence-bound autonomous data investigation engine**
 
-Depo: `evidra-autonomous-data-analyst`
+Repository: `evidra-autonomous-data-analyst`
 
-Evidra, bir CSV veya Excel tablosu üzerindeki iş sorusunu sohbet cevabına çeviren bir chatbot değildir. Soru bir araştırma problemi olarak ele alınır: kolon rolleri çıkarılır, yetenekler soruyla kesiştirilir, kapalı hipotez şablonları test edilir, her sayı bir kanıt nesnesine bağlanır ve bağlanamayan cümle yayımlanmaz.
+Evidra is not a chatbot that turns a CSV or Excel table into a fluent story. A business question is treated as a research problem: column roles are inferred, capabilities are intersected with the question, closed hypothesis templates are tested, every number is bound to an evidence object, and any sentence that cannot be bound is not published.
 
-<!-- Görsel: ürün logosu veya genel bakış karesi -->
-<!-- ![Evidra genel bakış](docs/screenshots/04-dashboard.png) -->
+<!-- Image: product logo or overview frame -->
+<!-- ![Evidra overview](docs/screenshots/04-dashboard.png) -->
 
 ---
 
 ## Overview
 
-Bir metrik değiştiğinde (“satış neden düştü?”) birkaç yapısal açıklama mümkündür: sipariş sayısı mı daraldı, sepet tutarı mı küçüldü, tek bir bölge/kategori mi çekti, yoksa güncel dönem penceresi mi eksik? Bunlardan birini, kayıtlı bir deney çalıştırmadan adlandırmak inceleme değil, hikâye üretmektir.
+When a metric moves (“why did sales drop?”), several structural explanations are possible: order count contracted, basket size shrank, a single region or category pulled the change, or the current period window is truncated. Naming one of those without a registered experiment is storytelling, not investigation.
 
-Evidra bu yolu görünür ve denetlenebilir kılar:
+Evidra makes that path observable and auditable:
 
 ```text
-SORU → YETENEKLER → HİPOTEZLER → DENEYLER
-     → KANIT → KARAR → bütçe / dur
-     → İDDİA DOĞRULAYICI → YAYIMLANAN CEVAP
+QUESTION → CAPABILITIES → HYPOTHESES → EXPERIMENTS
+        → EVIDENCE → DECISION → budget / stop
+        → CLAIM VALIDATOR → PUBLISHED ANSWER
 ```
 
-Dil modeli (veya deterministik politika) **ne bakılacağına** karar verir. Hesaplayan katman Python, SQL ve istatistiktir. Motorun dönüş tipi kanıttır. Model, gerçeğin kaynağı değildir.
+The language model (or a deterministic policy) decides **what to look at**. Python, SQL, and statistics compute. Evidence is the engine’s return type. The model is not the source of truth.
 
-V1 rapor dili **ilişki** dilidir, nedensellik değil. Güç `weak | moderate | strong | inconclusive` olarak tutulur; uydurma bir “%89 güven” üretilmez.
+V1 report language is **association**, not causation. Strength is `weak | moderate | strong | inconclusive`. A fabricated “89% confidence” is never emitted.
 
 ---
 
 ## Key Features
 
-- **Kapalı deney uzayı:** Motor yeni operatör icat etmez. Şablonlar sabitir: dönem karşılaştırması, dilim, hacim–sepet ayrıştırması, etkileşim, anomali, ilişki testi.
-- **Yetenek ∩ soru:** Gerekli kolon yoksa (ör. teslimat gecikmesi, müşteri kaybı) hipotez uydurulmaz; açıkça çekimser kalınır.
-- **Kanıt nesnesi:** Her işlem `operation`, kolonlar, filtre, dönem, değer ve güç ile kayıt altına alınır. Cümlede geçen her sayı bu kayıttan gelir.
-- **İddia doğrulayıcı + reviewer:** Nedensel fiiller, bağlanmamış sayılar ve motor jargonu yayımlanmaz.
-- **Araştırma bütçesi:** Hipotez sayısı, deney sayısı, etkileşim derinliği ve duvar saati dolunca durulur; anlatı tamamlanana kadar dönülmez.
-- **Soru tipine göre cevap:** “Neden değişti?” ile “hangi kategori öne çıkıyor?” aynı abstain cümlesine düşmez; ranking sorusu ilgili kırılımı önce test eder.
-- **Çok yüzeyli ürün:** Genel bakış, analiz sohbeti, inceleme konsolu ve detaylı rapor aynı inceleme grafiğinden beslenir.
-- **Takip soruları:** “Peki West’te durum nasıl?” donmuş kanıttan cevaplanır. “West’i ayrı incele” aynı sohbette kapsamlı (scoped) bir run başlatır.
-- **Değerlendirme kapısı:** Sentetik golden set, adversarial tablolar, ürün soruları ve efficiency overlay. Doğruluk ve yasaklı dil release kapısıdır; gecikme sayısı değildir.
+- **Closed experiment space:** The engine does not invent operators. Templates are fixed: period comparison, segmentation, volume–value decomposition, interaction, anomaly, association test.
+- **Capability ∩ question:** If required columns are missing (delivery delay, churn, and so on), no hypothesis is invented; the run abstains.
+- **Evidence object:** Every operation is recorded with `operation`, columns, filters, period, value, and strength. Every number in the answer comes from that record.
+- **Claim validator + reviewer:** Causal verbs, unbound numbers, and engine jargon are not published.
+- **Research budget:** Hypothesis count, experiment count, interaction depth, and wall time stop the loop. It does not run until a narrative appears.
+- **Question-aware answers:** “Why did it change?” and “which category stands out?” do not collapse into the same abstain sentence. Ranking questions test the requested slice first.
+- **Multi-surface product:** Overview, analysis chat, investigation console, and detailed report all read the same investigation graph.
+- **Follow-ups:** “How does West look?” is answered from frozen evidence. “Investigate West on its own” starts a scoped run in the same chat.
+- **Evaluation gates:** Synthetic golden set, adversarial tables, product questions, and an efficiency overlay. Correctness and forbidden language are release gates; latency is not.
 
 ---
 
@@ -47,33 +47,33 @@ V1 rapor dili **ilişki** dilidir, nedensellik değil. Güç `weak | moderate | 
 
 ```text
 evidra-autonomous-data-analyst/
-├── analysis/                     # İnceleme motoru ve API
-│   ├── api.py                    # FastAPI: dataset, chat, run, sayfalar
+├── analysis/                     # Investigation engine and API
+│   ├── api.py                    # FastAPI: datasets, chats, runs, pages
 │   ├── graph.py                  # LangGraph: inspect → rank → experiment → report
-│   ├── heuristic.py              # Kapalı şablon sıralama ve deney döngüsü
+│   ├── heuristic.py              # Closed-template ranking and experiment loop
 │   ├── policy.py                 # Intent (why_change / ranking / association)
-│   ├── router.py                 # Sohbet turu: incele / kanıttan cevapla / abstain
-│   ├── response.py               # Donmuş run’dan Türkçe analist cevabı
-│   ├── report.py                 # Analist brifingi + KPI + dilim tablosu
-│   ├── charts.py                 # Soru ve kanıta göre Plotly seçimi
-│   ├── chat.py                   # Sohbet katmanı (SQL/Python çalıştırmaz)
-│   ├── scope.py                  # Follow-up dilim filtresi
-│   ├── evidence/                 # Kanıt modeli, skor, doğrulayıcı
-│   ├── tools/                    # Kayıtlı araçlar (DuckDB, runtime)
+│   ├── router.py                 # Chat turn: investigate / answer from evidence / abstain
+│   ├── response.py               # Analyst answer from frozen run state
+│   ├── report.py                 # Analyst briefing + KPIs + slice table
+│   ├── charts.py                 # Plotly selection from question + evidence
+│   ├── chat.py                   # Chat layer (never executes SQL/Python)
+│   ├── scope.py                  # Follow-up slice filter
+│   ├── evidence/                 # Evidence model, scorer, validator
+│   ├── tools/                    # Registered tools (DuckDB, runtime)
 │   └── eval/                     # Golden, adversarial, product, efficiency
-├── ui/                           # Ürün yüzeyleri (vanilla HTML/CSS/JS)
-│   ├── dashboard.html            # Genel bakış
-│   ├── chat.html                 # Analiz sohbeti
-│   ├── index.html                # İnceleme konsolu
-│   └── report.html               # Detaylı rapor
+├── ui/                           # Product surfaces (vanilla HTML/CSS/JS)
+│   ├── dashboard.html            # Overview
+│   ├── chat.html                 # Analysis chat
+│   ├── index.html                # Investigation console
+│   └── report.html               # Detailed report
 ├── data/
-│   ├── fixtures/                 # Sentetik ve şema fixture’ları (commit’li)
-│   ├── raw/                      # Superstore / Olist / UCI (yerel, commit edilmez)
-│   └── processed/runs/           # Tamamlanmış inceleme kayıtları
+│   ├── fixtures/                 # Synthetic and schema fixtures (committed)
+│   ├── raw/                      # Superstore / Olist / UCI (local, not committed)
+│   └── processed/runs/           # Completed investigation records
 ├── evals/                        # Golden, adversarial, product, rubric JSON
 ├── tests/                        # pytest
-├── docs/                         # Mimari, şemalar, fazlar, demo
-│   └── screenshots/              # Portfolio kareleri (PNG’leri sen eklersin)
+├── docs/                         # Architecture, schemas, phases, demo
+│   └── screenshots/              # Portfolio frames (drop PNGs here)
 ├── PLAN.md
 ├── pyproject.toml
 └── README.md
@@ -83,77 +83,79 @@ evidra-autonomous-data-analyst/
 
 ## Installation & Setup
 
-### 1. Önkoşullar
+### 1. Prerequisites
 
 - Python **3.11+**
-- [uv](https://docs.astral.sh/uv/) (kilit dosyası: `uv.lock`)
+- [uv](https://docs.astral.sh/uv/) (lockfile: `uv.lock`)
 
-### 2. Bağımlılıklar
+### 2. Dependencies
 
 ```bash
 uv sync --extra dev
 ```
 
-Çekirdek paketler: pandas, numpy, scipy, plotly, openpyxl, pydantic, duckdb, langgraph, fastapi, uvicorn. Geliştirme: pytest, httpx.
+Core packages: pandas, numpy, scipy, plotly, openpyxl, pydantic, duckdb, langgraph, fastapi, uvicorn. Dev: pytest, httpx.
 
-### 3. Çalıştır
+### 3. Run
 
 ```bash
 uv run python -m analysis.api
 ```
 
-Yerel, kimlik doğrulama yok. Port **8765**.
+Local, no auth. Port **8765**.
 
-- Genel bakış: `http://127.0.0.1:8765/dashboard`
-- Analiz sohbeti: `http://127.0.0.1:8765/chat`
-- İnceleme konsolu: `http://127.0.0.1:8765/console`
-- Detaylı rapor: `http://127.0.0.1:8765/report?run={id}`
+- Overview: `http://127.0.0.1:8765/dashboard`
+- Analysis chat: `http://127.0.0.1:8765/chat`
+- Investigation console: `http://127.0.0.1:8765/console`
+- Detailed report: `http://127.0.0.1:8765/report?run={id}`
 
-Hızlı sahne: `http://127.0.0.1:8765/chat?fixture=clear_driver`
+Quick scene: `http://127.0.0.1:8765/chat?fixture=clear_driver`
 
 ---
 
 ## Usage Guide
 
-### Ürün yüzeyleri
+### Product surfaces
 
-**Genel bakış (`/dashboard`)**  
-Son incelemenin KPI’ları, kanıttan üretilen grafikler, sıralanabilir dilim tablosu, geçmiş raporlar ve sistem özeti. Landing metni değil, analist ana ekranı.
+**Overview (`/dashboard`)**  
+Latest-run KPIs, evidence-bound charts, a sortable slice table, past reports, and a system summary. This is an analyst home screen, not a landing page.
 
-<!-- ![Genel bakış](docs/screenshots/04-dashboard.png) -->
+<!-- ![Overview](docs/screenshots/04-dashboard.png) -->
 
-**Analiz sohbeti (`/chat`)**  
-Veri setini bağla (örnek fixture veya CSV/Excel), iş sorusunu sor. Cevap Türkçe analist dilindedir: önceki → güncel tutar, yoğunlaşan dilim, hacim/sepet okuması. Sağ panelde akış, KPI ve grafik; mesajda zaman ve durum satırı vardır.
+**Analysis chat (`/chat`)**  
+Bind a dataset (sample fixture or CSV/Excel) and ask a business question. The answer is analyst prose: previous → current amount, concentrated slice, volume/basket reading. The right panel shows the workflow, KPIs, and a chart; each message has a time and status line.
 
-<!-- ![Sohbet soru ve cevap](docs/screenshots/01-chat-question.png) -->
-<!-- ![Sohbet sağ panel](docs/screenshots/02-chat-preview.png) -->
+<!-- ![Chat question and answer](docs/screenshots/01-chat-question.png) -->
+<!-- ![Chat side panel](docs/screenshots/02-chat-preview.png) -->
 
-**İnceleme konsolu (`/console`)**  
-Dört adım: veri seti → iş sorusu → nasıl bakıldı → sonuç (KPI, grafik, dilim tablosu). Araç izi, kanıt ID’leri ve denetim kayıtları katlanabilir teknik bölümdedir.
+**Investigation console (`/console`)**  
+Four steps: dataset → business question → how it was examined → result (KPIs, charts, slice table). Tool traces, evidence IDs, and review records sit in a foldable technical section.
 
-**Detaylı rapor (`/report`)**  
-Sohbetteki özetin aynısı, KPI şeridi, grafikler, headline bulgular, sonraki sorular, dilim tablosu ve “bu raporun söylemediği şey”. Motor jargonu ekte kalır.
+**Detailed report (`/report`)**  
+The same summary as chat, plus a KPI strip, charts, headline findings, next questions, a slice table, and “what this report does not claim.” Engine jargon stays in the appendix.
 
-<!-- ![İnceleme raporu](docs/screenshots/03-report.png) -->
+<!-- ![Investigation report](docs/screenshots/03-report.png) -->
 
-### Örnek sorular
+### Example questions
 
-| Veri | Soru | Beklenen davranış |
+| Data | Question | Expected behavior |
 | --- | --- | --- |
-| Net yoğunlaşma (`clear_driver`) | Satış neden değişti? | West × Office Supplies; tutar ve pay |
-| Aynı run follow-up | Hangi kategori öne çıkıyor? | Ranking: kategori kırılımı |
-| Aynı run follow-up | West bölgesindeki Office Supplies neden düştü? | Scoped run, yeni inceleme |
-| AOV tuzağı (`aov_trap`) | Satış neden değişti? | Sepet tutarı, sipariş sayısı değil |
-| Sinyal yok (`no_signal`) | Satış neden değişti? | Abstain; tek kaynak işaretlenmez |
-| Taksi (`taxi_trips`) | Ücret neden değişti? | “Satışlar” demez; ücret dili |
-| Superstore (yerel) | Hangi bölge öne çıkıyor? | Ranking; önce Region |
-| Teslimat / churn | Teslimat gecikmesi puanı nasıl etkiler? | Capability yoksa abstain |
+| Clear concentration (`clear_driver`) | Satış neden değişti? | West × Office Supplies; amount and share |
+| Follow-up on the same run | Hangi kategori öne çıkıyor? | Ranking on the category slice |
+| Follow-up on the same run | West bölgesindeki Office Supplies neden düştü? | Scoped run, new investigation |
+| AOV trap (`aov_trap`) | Satış neden değişti? | Basket size, not order count |
+| No signal (`no_signal`) | Satış neden değişti? | Abstain; no single source named |
+| Taxi (`taxi_trips`) | Ücret neden değişti? | Fare language, not “sales” |
+| Superstore (local) | Hangi bölge öne çıkıyor? | Ranking; Region first |
+| Delivery / churn | Teslimat gecikmesi puanı nasıl etkiler? | Abstain if the capability is missing |
 
-<!-- ![Çekimser cevap](docs/screenshots/05-abstain.png) -->
+<!-- ![Abstain answer](docs/screenshots/05-abstain.png) -->
 
-### CLI inceleme
+The product UI is Turkish; the questions above are the ones the surfaces actually ask.
 
-API olmadan aynı grafiği çalıştırmak için:
+### CLI investigation
+
+Same graph, no API:
 
 ```bash
 uv run python -m analysis.graph \
@@ -161,7 +163,7 @@ uv run python -m analysis.graph \
   --question "Satış neden değişti?"
 ```
 
-Olist (çok tablo, `data/raw/` yerelde olmalı):
+Olist (multi-table; local files under `data/raw/`):
 
 ```bash
 uv run python -m analysis.graph \
@@ -169,210 +171,210 @@ uv run python -m analysis.graph \
   --question "Teslimat gecikmesi ile review score arasında association var mı?"
 ```
 
-### Değerlendirme
+### Evaluation
 
 ```bash
 uv run python -m analysis.eval
 uv run pytest
 ```
 
-Alt süitler:
+Sub-suites:
 
 ```bash
 uv run python -m analysis.eval.efficiency
 uv run python -m analysis.eval.adaptive
 ```
 
-Golden matris: `evals/golden.json` (~20 madde: sürücü, tuzak, abstain, etkileşim, zamansal, anomali, sayısal, bütçe). Kapılar: sayısal doğruluk, kanıt bağlama, `stop_reason` bütünlüğü, yasaklı dil. Araç sayısı ve gecikme `evals/out/efficiency_log.jsonl` dosyasına yazılır; release kapısı değildir.
+Golden matrix: `evals/golden.json` (~20 items: driver, trap, abstain, interaction, temporal, anomaly, numerical, budget). Gates: numerical correctness, evidence binding, `stop_reason` completeness, forbidden language. Tool counts and latency go to `evals/out/efficiency_log.jsonl` and are **not** a release gate.
 
 ---
 
 ## Data & Fixtures
 
-| Fixture | Dosya | Ne için |
+| Fixture | File | Purpose |
 | --- | --- | --- |
-| `clear_driver` | `data/fixtures/clear_driver.csv` | Tek dilimde net yoğunlaşma |
-| `aov_trap` | `data/fixtures/aov_trap.csv` | Hacim sabit, sepet düşer |
-| `no_signal` | `data/fixtures/no_signal.csv` | Yayılmış değişim; abstain |
-| `missingness` | `data/fixtures/missingness.csv` | Eksik / kesilmiş pencere |
-| `taxi_trips` | `data/fixtures/taxi_trips.csv` | Coğrafya + zaman; ücret metriği |
-| `superstore` | `data/raw/superstore.csv` | Tek tablo genelleme (yerel) |
-| `olist` | `data/raw/` | Çok tablo (yerel, commit edilmez) |
-| `uci_retail` | `data/fixtures/retail_line_items.csv` | Satır kalemi şema adaptörü |
+| `clear_driver` | `data/fixtures/clear_driver.csv` | Clear concentration in one slice |
+| `aov_trap` | `data/fixtures/aov_trap.csv` | Volume flat, basket down |
+| `no_signal` | `data/fixtures/no_signal.csv` | Diffuse change; abstain |
+| `missingness` | `data/fixtures/missingness.csv` | Missing / truncated window |
+| `taxi_trips` | `data/fixtures/taxi_trips.csv` | Geo + time; fare metric |
+| `superstore` | `data/raw/superstore.csv` | Single-table generalization (local) |
+| `olist` | `data/raw/` | Multi-table (local, not committed) |
+| `uci_retail` | `data/fixtures/retail_line_items.csv` | Line-item schema adapter |
 
-Yükleme (yalnız HTTP multipart, fixture/CLI değil): varsayılan 10 MiB, 50_000 satır, 64 kolon. Aşım **413**, biçim hatası **400**. Ortam değişkenleri: `EVIDRA_MAX_UPLOAD_BYTES`, `EVIDRA_MAX_UPLOAD_ROWS`, `EVIDRA_MAX_UPLOAD_COLUMNS`, `EVIDRA_MAX_UPLOAD_CELL_LENGTH`.
+Uploads (HTTP multipart only — not fixture/CLI): default 10 MiB, 50,000 rows, 64 columns. Oversize is **413**, shape/filename errors are **400**. Env: `EVIDRA_MAX_UPLOAD_BYTES`, `EVIDRA_MAX_UPLOAD_ROWS`, `EVIDRA_MAX_UPLOAD_COLUMNS`, `EVIDRA_MAX_UPLOAD_CELL_LENGTH`.
 
-Kalıcı run’lar `data/processed/runs/` altına JSON yazılır. Testler `EVIDRA_DATA` ile izole eder. Tamamlanmış kayıt değiştirilemez. Eksik run **404**, bozuk JSON **422**.
+Completed runs are written as JSON under `data/processed/runs/`. Tests isolate persistence with `EVIDRA_DATA`. Completed records are immutable. Missing run is **404**, corrupt JSON is **422**.
 
 ---
 
 ## Analysis Methodology
 
-### 1. Şema ve yetenek
+### 1. Schema and capabilities
 
-Kolonlar sabit isimle değil rolle okunur: zaman, metrik, boyut, kimlik, yok say. Yetenekler şemadan çıkar (zamansal karşılaştırma, segmentasyon, hacim–değer, ilişki, join…). Soru bu kümenin dışında kalırsa durulur.
+Columns are read by role, not by hardcoded name: time, metric, dimension, identifier, ignore. Capabilities come from that schema (temporal comparison, segmentation, volume–value, association, join…). If the question sits outside that set, the run stops.
 
 ### 2. Intent
 
-| Intent | Örnek | Ne test edilir |
+| Intent | Example | What is tested |
 | --- | --- | --- |
-| `why_change` | Satış neden değişti? | Dönem, dilim, hacim/sepet, etkileşim |
-| `ranking` | Hangi kategori öne çıkıyor? | Sorulan boyut önce; güncel tutar veya en olumsuz değişim |
-| `association` | Teslimat gecikmesi puanı nasıl etkiler? | İlişki testi; neden iddiası yok |
+| `why_change` | Satış neden değişti? | Period, slice, volume/basket, interaction |
+| `ranking` | Hangi kategori öne çıkıyor? | Requested dimension first; current amount or worst change |
+| `association` | Teslimat gecikmesi puanı nasıl etkiler? | Association test; no causal claim |
 
-### 3. Deneyler
+### 3. Experiments
 
-Kayıtlı araçlar tabloyu hesaplar. LLM, SQL veya Python üretmez. Follow-up metni asla sorgu olarak çalıştırılmaz.
+Registered tools compute on the table. The LLM does not emit SQL or Python. Follow-up text is never executed as a query.
 
-### 4. Karar tipleri
+### 4. Decision types
 
-| Karar | Anlamı (kullanıcı dilinde) |
+| Decision | Meaning |
 | --- | --- |
-| `primary_driver` | Değişim bir dilimde yoğunlaşıyor |
-| `value_not_volume` | Sipariş sayısı değil, sepet tutarı |
-| `ranking` | Sıralama: öne çıkan veya en olumsuz dilim |
-| `data_artefact` | Güncel dönem penceresi eksik olabilir |
-| `association` | İlişki var; kök neden değil |
-| `abstain` | Tek kaynak işaretlenecek kadar güçlü sinyal yok |
+| `primary_driver` | The change concentrates in one slice |
+| `value_not_volume` | Basket size, not order count |
+| `ranking` | Ranking: leading or worst slice |
+| `data_artefact` | Current period window may be incomplete |
+| `association` | Association exists; not a root cause |
+| `abstain` | No signal strong enough to name one source |
 
-### 5. Cevap üretimi
+### 5. Answer composition
 
-`analysis/response.py` donmuş run üzerinden Türkçe cümle kurar. Abstain tekrar etmez; taranan kırılımları söyler. Sorumluluk / “ilişki dilindedir” cümlesi sohbet kapanışına yazılmaz; raporun sınırlar listesinde durur.
+`analysis/response.py` writes the analyst sentence from frozen run state. Abstain does not repeat itself; it names the dimensions that were scanned. The boilerplate “this is association language” sentence is not appended to chat; it lives in the report limitations list.
 
-### 6. Görselleştirme
+### 6. Visualization
 
-Grafik tipi soru + kanıt işlemine göre seçilir (çizgi, sütun, şelale). Ham araç çıktısı dump edilmez. Her grafik `evidence_id` taşır. Palet: koyu mor, adaçayı, hardal, mavi, gül.
+Chart type is chosen from the question plus the evidence operation (line, bar, waterfall). Raw tool payloads are not dumped. Every chart cites `evidence_id`. Palette: deep purple, sage, mustard, blue, rose.
 
 ---
 
 ## Outputs
 
-### Kullanıcıya giden
+### User-facing
 
-- Sohbet cevabı: tutar çifti, dilim, hacim/sepet okuması, takip chip’leri
-- Rapor: yönetici özeti, KPI, grafikler, bulgular, dilim tablosu, sınırlar
-- Konsol: aynı brifing + katlanabilir teknik iz
-- Dashboard: son inceleme KPI + kanıt tablosu + geçmiş
+- Chat answer: amount pair, slice, volume/basket reading, follow-up chips
+- Report: executive summary, KPIs, charts, findings, slice table, limitations
+- Console: the same briefing plus a foldable technical trace
+- Dashboard: latest-run KPIs + evidence table + history
 
-### Motorda kalan
+### Engine-internal
 
-- `evidence[]` — işlem, değer, güç, dönem
-- `claims[]` — yalnızca doğrulayıcıdan geçenler
-- `reviews[]` — kabul / ret
-- `traces[]` — araç, süre, özet
+- `evidence[]` — operation, value, strength, period
+- `claims[]` — only those that pass the validator
+- `reviews[]` — accept / reject
+- `traces[]` — tool, duration, summary
 - `investigation_report` — `schema_version` v2.12
 
-### Konsol / eval
+### Eval / console
 
-- Golden ve product skorları
-- Efficiency log (araç / deney sayısı)
-- Abstain ve yasaklı dil ihlali (kapı)
+- Golden and product scores
+- Efficiency log (tool / experiment counts)
+- Abstain and forbidden-language violations (gate)
 
 ---
 
 ## API
 
-| Metod | Yol | İş |
+| Method | Path | Role |
 | --- | --- | --- |
-| `GET` | `/health` | Sağlık |
-| `GET` | `/fixtures` | Örnek veri kataloğu |
-| `POST` | `/datasets` | Fixture JSON veya multipart dosya |
-| `GET` | `/datasets/{id}` | Özet ve yetenekler |
+| `GET` | `/health` | Health |
+| `GET` | `/fixtures` | Sample dataset catalog |
+| `POST` | `/datasets` | Fixture JSON or multipart file |
+| `GET` | `/datasets/{id}` | Overview and capabilities |
 | `POST` | `/datasets/{id}/analyze` | `{ "question": "..." }` |
-| `GET` | `/runs` | Run metadata listesi |
-| `GET` | `/runs/{id}` | Tam run + rapor |
-| `GET` | `/runs/{id}/report` | Yalnız rapor |
-| `POST` | `/chats` | Sohbet aç |
-| `POST` | `/chats/{id}/messages` | Tur: incele veya kanıttan cevapla |
+| `GET` | `/runs` | Run metadata list |
+| `GET` | `/runs/{id}` | Full run + report |
+| `GET` | `/runs/{id}/report` | Report only |
+| `POST` | `/chats` | Open a chat |
+| `POST` | `/chats/{id}/messages` | Turn: investigate or answer from evidence |
 
 ---
 
 ## Configuration
 
-İnceleme bütçesi (`Budget`, varsayılan): hipotez ve deney tavanı, etkileşim derinliği, `max_seconds` (60). Yükleme tavanları yukarıdaki `EVIDRA_*` değişkenleriyle değişir.
+Investigation budget (`Budget`, defaults): hypothesis and experiment caps, interaction depth, `max_seconds` (60). Upload caps are the `EVIDRA_*` variables above.
 
-Sohbet yönlendirici (`analysis/router.py`):
+Chat router (`analysis/router.py`):
 
-- Meta: adımlar / rapor / kanıt göster
-- Capability yok → abstain (motor çalışmaz)
-- Dilim + “neden / ayrı incele” → scoped run
-- Ranking / “bunun nedeni ne?” → donmuş kanıttan cevap
-- Aksi halde yeni inceleme
+- Meta: show steps / report / evidence
+- Missing capability → abstain (engine does not run)
+- Slice + “why / investigate separately” → scoped run
+- Ranking / “what is the cause?” → answer from frozen evidence
+- Otherwise a new investigation
 
 ---
 
 ## Technologies Used
 
-| Katman | Teknoloji |
+| Layer | Technology |
 | --- | --- |
-| Dil | Python 3.11+ |
-| Tablo / SQL | pandas, DuckDB |
-| İstatistik | numpy, scipy |
-| Graf | LangGraph |
+| Language | Python 3.11+ |
+| Tables / SQL | pandas, DuckDB |
+| Statistics | numpy, scipy |
+| Graph | LangGraph |
 | API | FastAPI, uvicorn |
-| Görselleştirme | Plotly |
-| Sözleşme | Pydantic |
+| Visualization | Plotly |
+| Contracts | Pydantic |
 | UI | Vanilla HTML / CSS / JS |
-| Test | pytest, httpx |
-| Paket | uv |
+| Tests | pytest, httpx |
+| Packaging | uv |
 
-**V1’e dahil değil:** çok ajanlı topoloji, RAG / vektör arama, fine-tuning, PostgreSQL, MLflow, `run_python` sandbox’ı, sahte güven skoru, raporda nedensel fiil.
+**Not in V1:** multi-agent topology, RAG / vector search, fine-tuning, PostgreSQL, MLflow, a `run_python` sandbox, fake confidence scores, causal verbs in reports.
 
 ---
 
 ## Business Applications
 
-- **Değişim incelemesi:** Satış / ücret / ciro neden hareket etti, hangi dilimde toplandı.
-- **Hacim vs. sepet:** Adet mi düştü, sipariş başına tutar mı.
-- **Sıralama:** Hangi bölge veya kategori önde / geride.
-- **Veri kalitesi:** Kesilmiş ay, eksik pencere — önce bunu söylemek.
-- **İlişki (çok tablo):** Teslimat gecikmesi ve puan birlikte mi hareket ediyor (neden değil).
-- **Denetlenebilir analitik:** Her iddia kanıt ID’sine iner; uydurma açıklama yok.
+- **Change investigation:** Why sales / fare / revenue moved, and which slice absorbed it.
+- **Volume vs. basket:** Order count vs. amount per order.
+- **Ranking:** Which region or category leads or lags.
+- **Data quality:** Truncated month or missing window — say that first.
+- **Association (multi-table):** Whether delivery delay and review score move together (not why).
+- **Auditable analytics:** Every claim traces to an evidence ID; no invented explanation.
 
 ---
 
 ## Workflow
 
 ```text
-Ham tablo
-  → rol / yetenek
-  → soru ∩ yetenek  (boşsa abstain)
-  → kapalı hipotez sırası
-  → kayıtlı deneyler + kanıt
-  → yeterlilik / bütçe / dur
-  → iddia doğrulama + reviewer
-  → Türkçe cevap + rapor + grafik
-  → sohbet follow-up (donmuş kanıt veya scoped run)
+Raw table
+  → roles / capabilities
+  → question ∩ capability  (empty → abstain)
+  → closed hypothesis rank
+  → registered experiments + evidence
+  → sufficiency / budget / stop
+  → claim validation + reviewer
+  → analyst answer + report + charts
+  → chat follow-up (frozen evidence or scoped run)
 ```
 
 ---
 
 ## Documentation
 
-| Belge | Rol |
+| Document | Role |
 | --- | --- |
-| [PLAN.md](PLAN.md) | Mimari, veri sırası, faz kapıları |
-| [docs/SCHEMAS.md](docs/SCHEMAS.md) | Kilitli sözleşmeler: rol, yetenek, kanıt, araç, eval |
-| [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) | Kabul / daraltma / alınmayan kararlar |
-| [docs/DEMO.md](docs/DEMO.md) | 5 dakikalık tur ve ekran görüntüsü listesi |
-| [docs/phases/](docs/phases/) | Faz 0–10 görev ve çıkış kriterleri |
+| [PLAN.md](PLAN.md) | Architecture, dataset sequence, phase gates |
+| [docs/SCHEMAS.md](docs/SCHEMAS.md) | Locked contracts: roles, capabilities, evidence, tools, eval |
+| [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) | Accepted, narrowed, and rejected decisions |
+| [docs/DEMO.md](docs/DEMO.md) | Five-minute tour and screenshot list |
+| [docs/phases/](docs/phases/) | Phases 0–10: tasks and exit criteria |
 
-**Veri ilerlemesi:** planted-truth sentetik fixture → Superstore → Olist (çok tablo) → UCI satır kalemi adaptörü → taksi seferi şeması. Olist V1 doğruluk seti değildir.
+**Data progression:** planted-truth synthetic fixtures → Superstore → Olist (multi-table) → UCI line-item adapter → taxi-trip schema. Olist is not the V1 correctness set.
 
-V1 çekirdek, **Faz 6** (eval, abstain, bütçe) UI olmadan yeşil olduğunda tamamdır. Faz 7 ince konsoldur. İsteğe bağlı Python sandbox Faz 8’dir ve atlanabilir.
+The V1 core is complete when **Phase 6** (eval, abstention, budget) is green **without** UI. Phase 7 is a thin console. Optional Python sandbox is Phase 8 and may be skipped.
 
 ---
 
 ## Screenshots
 
-PNG’leri `docs/screenshots/` altına koy; satırlar otomatik dolar.
+Drop PNGs under `docs/screenshots/`; uncomment the image lines above.
 
-| Dosya | Sahne |
+| File | Scene |
 | --- | --- |
-| `01-chat-question.png` | Soru + Türkçe cevap |
-| `02-chat-preview.png` | Sağ panel KPI + grafik |
-| `03-report.png` | Rapor: özet, grafik, sınırlar |
-| `04-dashboard.png` | Genel bakış |
-| `05-abstain.png` | Capability / sinyal yok |
+| `01-chat-question.png` | Question + analyst answer |
+| `02-chat-preview.png` | Side panel KPIs + chart |
+| `03-report.png` | Report: summary, charts, limitations |
+| `04-dashboard.png` | Overview |
+| `05-abstain.png` | Missing capability / no signal |
 
-Çekimden önce aynı sahneyi üret: `?fixture=clear_driver`.
+Produce the same scene first: `?fixture=clear_driver`.
