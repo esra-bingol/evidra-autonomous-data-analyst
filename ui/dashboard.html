@@ -4,9 +4,13 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Evidra — Genel bakış</title>
-    <link rel="stylesheet" href="/static/dashboard.css?v=6" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800&display=swap&subset=latin,latin-ext" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/theme.css?v=10" />
+    <link rel="stylesheet" href="/static/dashboard.css?v=10" />
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="/static/dashboard.js?v=6" defer></script>
+    <script src="/static/dashboard.js?v=10" defer></script>
   </head>
   <body>
     <aside class="rail">
@@ -82,13 +86,12 @@
         </div>
       </header>
 
-      <section class="dashboard-shell">
-        <div class="dashboard-main">
+      <section class="dashboard-main">
           <section class="hero hero-compact">
             <div class="hero-copy">
-              <p class="eyebrow">Nasıl çalışır</p>
+              <p class="eyebrow">Çalışma alanı</p>
               <h2>Verini yükle, sorunu sor, kanıtı gör.</h2>
-              <p>Evidra verini analiz planına çevirir; değişimin nerede, ne kadar ve hangi kırılımda göründüğünü kanıtlarıyla açıklar.</p>
+              <p>Son incelemenin KPI’ları, grafikleri ve kırılım tablosu aynı kanıt zincirinden dolar.</p>
             </div>
             <div class="hero-actions">
               <a class="primary" href="/chat">Analize başla</a>
@@ -97,10 +100,30 @@
           </section>
 
           <section class="metrics" aria-label="Hızlı istatistikler">
-            <article><span class="metric-icon plum">●</span><div><small>Son inceleme</small><strong id="kpi-decision">—</strong></div></article>
-            <article><span class="metric-icon green">%</span><div><small>Değişim oranı</small><strong id="kpi-change">—</strong></div></article>
-            <article><span class="metric-icon amber">↗</span><div><small>Öne çıkan kırılım</small><strong id="kpi-driver">—</strong></div></article>
-            <article><span class="metric-icon rose">▣</span><div><small>Hacim / sepet</small><strong id="kpi-volume">—</strong></div></article>
+            <article>
+              <span class="metric-icon plum" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </span>
+              <div><small>Son inceleme</small><strong id="kpi-decision">—</strong><em>Karar özeti</em></div>
+            </article>
+            <article>
+              <span class="metric-icon green" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M4 16h4V8H4v8Zm6 0h4V4h-4v12Zm6 0h4v-6h-4v6Z" fill="currentColor"/></svg>
+              </span>
+              <div><small>Toplam / değişim</small><strong id="kpi-change">—</strong><em>Dönem farkı</em></div>
+            </article>
+            <article>
+              <span class="metric-icon amber" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M5 17 12 5l7 12H5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+              </span>
+              <div><small>Öne çıkan kırılım</small><strong id="kpi-driver">—</strong><em>Yoğunlaşan dilim</em></div>
+            </article>
+            <article>
+              <span class="metric-icon rose" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M4 18V9m5 9v-5m5 9V6m5 12v-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </span>
+              <div><small>Hacim / sepet</small><strong id="kpi-volume">—</strong><em>Hacim-değer ayrımı</em></div>
+            </article>
           </section>
           <p id="kpi-limitation" class="kpi-limitation">Son inceleme çalıştığında buradaki kartlar ve grafikler otomatik güncellenir.</p>
 
@@ -109,7 +132,12 @@
               <div><p class="eyebrow">Kanıt alanı</p><h2>Kanıttan üretilen grafikler</h2></div>
               <a href="/chat">Yeni soru</a>
             </div>
-            <div id="evidence-kpis" class="evidence-kpis" aria-label="Kanıt KPI kartları"></div>
+            <div id="evidence-kpis" class="evidence-kpis" aria-label="Kanıt KPI kartları">
+              <div><small>Toplam satış</small><strong>—</strong><span>Metrik henüz bağlanmadı</span></div>
+              <div><small>Değişim oranı</small><strong>—</strong><span>Önceki döneme göre</span></div>
+              <div><small>Kanıt kayıtları</small><strong>—</strong><span>Doğrulanmış işlem</span></div>
+              <div><small>Kırılım</small><strong>—</strong><span>Öne çıkan alan</span></div>
+            </div>
             <div id="chart-gallery" class="chart-gallery">
               <div class="empty-state"><strong>Henüz grafik yok</strong><p>Bir iş sorusu sorduğunuzda dönem değişimi veya dilim karşılaştırması burada görünür.</p></div>
             </div>
@@ -117,21 +145,26 @@
               <div class="panel-head compact">
                 <div><p class="eyebrow">Kanıt tablosu</p><h2>İlk kırılımlar</h2></div>
               </div>
-              <table id="evidence-table" class="evidence-table hidden">
-                <thead>
-                  <tr>
-                    <th data-sort="label">Dilim</th>
-                    <th data-sort="previous">Önceki</th>
-                    <th data-sort="current">Güncel</th>
-                    <th data-sort="change">Değişim</th>
-                    <th data-sort="share_pct">Pay</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+              <div class="table-shell">
+                <table id="evidence-table" class="evidence-table">
+                  <thead>
+                    <tr>
+                      <th data-sort="label">Dilim</th>
+                      <th data-sort="previous">Önceki</th>
+                      <th data-sort="current">Güncel</th>
+                      <th data-sort="change">Değişim</th>
+                      <th data-sort="share_pct">Pay</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="table-empty-row"><td colspan="5">İnceleme çalışınca dilim, önceki/güncel değer ve pay burada listelenir.</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </article>
-        </div>
+      </section>
+    </main>
 
         <aside class="insight-column">
           <article class="panel status-panel">
@@ -186,7 +219,5 @@
             </ul>
           </article>
         </aside>
-      </section>
-    </main>
   </body>
 </html>

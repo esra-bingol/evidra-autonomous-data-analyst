@@ -16,14 +16,14 @@ function themedFigure(figure) {
     return {
       ...trace,
       fill: trace.fill || (isLine ? "tozeroy" : undefined),
-      fillcolor: trace.fillcolor || (isLine ? "rgba(112, 71, 122, 0.14)" : undefined),
+      fillcolor: trace.fillcolor || (isLine ? "rgba(122, 78, 130, 0.18)" : undefined),
       hovertemplate: trace.hovertemplate || "%{x}<br><b>%{y:,.2f}</b><extra></extra>",
       marker: {
         ...(trace.marker || {}),
         color: trace.marker?.color || color,
         line: { width: 1, color: "rgba(255,255,255,0.75)", ...(trace.marker?.line || {}) },
       },
-      line: { ...(trace.line || {}), color: trace.line?.color || color, width: trace.line?.width || 2.5 },
+      line: { ...(trace.line || {}), color: trace.line?.color || color, width: trace.line?.width || 2.8, shape: isLine ? "spline" : undefined },
     };
   });
   const axis = {
@@ -230,6 +230,8 @@ function renderCharts(run) {
       window.Plotly.newPlot(plot, figure.data, figure.layout, {
         displayModeBar: false,
         responsive: true,
+      }).then((gd) => {
+        if (window.Plotly.Plots?.resize) window.Plotly.Plots.resize(gd);
       });
     }
   });
@@ -243,7 +245,7 @@ function metricCard(label, value, hint) {
   strong.textContent = value;
   card.append(small, strong);
   if (hint) {
-    const note = document.createElement("small");
+    const note = document.createElement("span");
     note.textContent = hint;
     card.appendChild(note);
   }
@@ -254,13 +256,13 @@ function renderEvidenceKpis(run) {
   const box = $("evidence-kpis");
   if (!box) return;
   box.replaceChildren();
-  if (!run) return;
-  const report = run.investigation_report || {};
+  const report = run?.investigation_report || {};
   const k = report.kpis || {};
+  const evidenceCount = (run?.evidence || []).length;
   box.append(
-    metricCard(k.metric_noun || "Metrik", formatPct(k.change_pct), "Dönem değişimi"),
-    metricCard("Hacim", shortPct(k.volume_change_pct), "Sipariş sayısı"),
-    metricCard("Sepet", shortPct(k.aov_change_pct), "Ortalama sipariş"),
+    metricCard(k.metric_noun || "Toplam satış", run ? formatPct(k.change_pct) : "—", "Dönem değişimi"),
+    metricCard("Değişim oranı", run ? shortPct(k.change_pct) : "—", "Önceki döneme göre"),
+    metricCard("Kanıt kayıtları", run ? String(evidenceCount || "—") : "—", "Doğrulanmış işlem"),
     metricCard("Kırılım", k.concentration || "—", "Öne çıkan alan"),
   );
 }
@@ -287,10 +289,15 @@ function renderEvidenceTable(run) {
   body.replaceChildren();
   const rows = run?.investigation_report?.slice_table || [];
   if (!rows.length) {
-    table.classList.add("hidden");
+    const empty = document.createElement("tr");
+    empty.className = "table-empty-row";
+    const cell = document.createElement("td");
+    cell.colSpan = 5;
+    cell.textContent = "İnceleme çalışınca dilim, önceki/güncel değer ve pay burada listelenir.";
+    empty.appendChild(cell);
+    body.appendChild(empty);
     return;
   }
-  table.classList.remove("hidden");
   for (const row of sortRows(rows).slice(0, 8)) {
     const tr = document.createElement("tr");
     for (const value of [

@@ -29,6 +29,14 @@ const STOP_PLAIN = {
   complete: "inceleme tamamlandı",
 };
 
+const RUN_STATUS = {
+  completed: "tamamlandı",
+  running: "çalışıyor",
+  failed: "hata",
+  abstained: "yoğunlaşma yok",
+  abstain: "yoğunlaşma yok",
+};
+
 const CHART_PLAIN = {
   trend: "Dönemler arası değişim",
   contribution: "Hangi dilim değişime katkı verdi",
@@ -488,7 +496,8 @@ async function loadHistory() {
     const a = document.createElement("a");
     a.href = `/report?run=${run.id || run.run_id}`;
     const when = (run.created_at || "").slice(0, 10);
-    a.textContent = `${when} · ${run.question || "—"} · ${run.status || ""}`;
+    const status = RUN_STATUS[run.status] || run.status || "";
+    a.textContent = status ? `${when} · ${run.question || "—"} · ${status}` : `${when} · ${run.question || "—"}`;
     li.appendChild(a);
     box.appendChild(li);
   }

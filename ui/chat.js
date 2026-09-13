@@ -21,7 +21,7 @@ const ICONS = {
 };
 
 const $ = (id) => document.getElementById(id);
-const state = { datasetId: null, chatId: null, sending: false };
+const state = { datasetId: null, chatId: null, sending: false, thinkTimer: null };
 
 function themeValue(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -46,7 +46,9 @@ function themedFigure(figure) {
         color: trace.marker?.color || color,
         line: { width: 0, ...(trace.marker?.line || {}) },
       },
-      line: { ...(trace.line || {}), color: trace.line?.color || color, width: trace.line?.width || 2.5 },
+      fill: trace.fill || (String(trace.mode || "").includes("lines") || trace.type === "scatter" ? "tozeroy" : undefined),
+      fillcolor: trace.fillcolor || "rgba(122, 78, 130, 0.16)",
+      line: { ...(trace.line || {}), color: trace.line?.color || color, width: trace.line?.width || 2.8, shape: trace.line?.shape || "spline" },
     };
   });
   const source = figure.layout || {};
@@ -196,16 +198,37 @@ function showBanner(text, kind) {
   if (kind) el.classList.add(kind);
 }
 
-function fillSuggest(box, items) {
+const SUGGEST_HINTS = {
+  "Satış neden değişti?": "Dönem karşılaştırması ve kanıt zinciri",
+  "Hangi bölge öne çıkıyor?": "Dilim sıralaması",
+  "Ücret neden değişti?": "Hacim / sepet ayrımı",
+  "Teslimat gecikmesi puanı nasıl etkiler?": "İlişki, neden değil",
+  "Hangi kategori öne çıkıyor?": "Kategori katkısı",
+};
+
+function fillSuggest(box, items, sendOnClick) {
   if (!box) return;
   box.innerHTML = "";
+  const cards = box.classList.contains("suggest-cards");
   (items || startersFor($("fixture")?.value)).forEach((q) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = q;
+    if (cards) {
+      const title = document.createElement("strong");
+      title.textContent = q;
+      const hint = document.createElement("small");
+      hint.textContent = SUGGEST_HINTS[q] || "Kanıta bağlı inceleme başlat";
+      b.append(title, hint);
+    } else {
+      b.textContent = q;
+    }
     b.addEventListener("click", () => {
       $("msg").value = q;
       syncSend();
+      if (sendOnClick && state.chatId && !state.sending) {
+        sendMessage();
+        return;
+      }
       $("msg").focus();
     });
     box.appendChild(b);
@@ -214,8 +237,8 @@ function fillSuggest(box, items) {
 
 function refreshStarters() {
   const items = startersFor($("fixture")?.value);
-  fillSuggest($("examples"), items);
-  fillSuggest($("examples-empty"), items);
+  fillSuggest($("examples"), items, Boolean(state.chatId));
+  fillSuggest($("examples-empty"), items, Boolean(state.chatId));
   const help = document.querySelector("#empty .help");
   if (help && state.datasetId) {
     help.textContent = "Veri bağlamak inceleme başlatmaz. Aşağıdaki sorulardan birini sorun.";
@@ -321,9 +344,20 @@ function responseCard(msg) {
   return card;
 }
 
+const THINKING_STEPS = [
+  "Soru yorumlanıyor",
+  "Hipotezler seçiliyor",
+  "Kanıtlar hesaplanıyor",
+  "Grafikler bağlanıyor",
+];
+
 function setThinking(on) {
   const old = document.getElementById("thinking");
   if (old) old.remove();
+  if (state.thinkTimer) {
+    clearInterval(state.thinkTimer);
+    state.thinkTimer = null;
+  }
   if (!on) return;
   const empty = $("empty");
   if (empty) empty.remove();
@@ -331,9 +365,15 @@ function setThinking(on) {
   row.id = "thinking";
   row.className = "row assistant";
   row.innerHTML =
-    `<span class="avatar assistant">${ICONS.assistant}</span><div class="stack"><p class="bubble thinking"><span class="loader" aria-hidden="true"></span><span>Analiz ediliyor</span></p><div class="message-meta">${timeLabel()} · çalışıyor</div></div>`;
+    `<span class="avatar assistant">${ICONS.assistant}</span><div class="stack"><div class="bubble thinking"><span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span><div class="thinking-copy"><strong>Analiz ediliyor…</strong><span id="thinking-step">${THINKING_STEPS[0]}</span></div></div><div class="message-meta">${timeLabel()} · çalışıyor</div></div>`;
   $("log").appendChild(row);
   $("log").scrollTop = $("log").scrollHeight;
+  let step = 0;
+  state.thinkTimer = setInterval(() => {
+    step = (step + 1) % THINKING_STEPS.length;
+    const label = document.getElementById("thinking-step");
+    if (label) label.textContent = THINKING_STEPS[step];
+  }, 900);
 }
 
 function renderHistory(messages) {
@@ -343,7 +383,7 @@ function renderHistory(messages) {
     empty.id = "empty";
     empty.className = "empty-card";
     empty.innerHTML =
-      `<span class="empty-icon">${ICONS.empty}</span><p class="hello">Verileriniz hakkında bir soru sorun</p><p class="help">Veri bağlamak cevap üretmez. Bu veri setine uygun bir soru sorun.</p><div class="suggest" id="examples-empty"></div>`;
+      `<span class="empty-icon">${ICONS.empty}</span><p class="hello">Verileriniz hakkında bir soru sorun</p><p class="help">Veri bağlamak cevap üretmez. Bu veri setine uygun bir soru sorun; Evidra kanıt, grafik ve adımları aynı sohbette döndürür.</p><div class="suggest suggest-cards" id="examples-empty"></div>`;
     $("log").appendChild(empty);
     refreshStarters();
     return;
@@ -429,8 +469,8 @@ async function bindFile(file) {
   setWorkspace(ds.name);
   setWorkflowStep(0);
   renderHistory([]);
-  fillSuggest($("examples"), DEFAULT_STARTERS);
-  fillSuggest($("examples-empty"), DEFAULT_STARTERS);
+  fillSuggest($("examples"), DEFAULT_STARTERS, true);
+  fillSuggest($("examples-empty"), DEFAULT_STARTERS, true);
   showBanner("Dosya bağlandı. Bu henüz bir cevap değil — bir iş sorusu sorun.");
   syncSend();
 }
@@ -442,20 +482,7 @@ async function loadFollowUps(runId) {
   const next = run.investigation_report?.recommended_next_investigations || [];
   const extras = ["Detaylı raporu göster.", "Araştırma adımlarını göster."];
   const items = [...next.slice(0, 2), ...extras];
-  const box = $("examples");
-  if (!box) return;
-  box.innerHTML = "";
-  items.forEach((q) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.textContent = q;
-    b.addEventListener("click", () => {
-      $("msg").value = q;
-      syncSend();
-      $("msg").focus();
-    });
-    box.appendChild(b);
-  });
+  fillSuggest($("examples"), items, true);
 }
 
 async function sendMessage(ev) {
