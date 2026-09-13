@@ -110,6 +110,11 @@ function setWorkflowStep(step) {
   });
 }
 
+function timeLabel(value) {
+  const date = value ? new Date(value) : new Date();
+  return date.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" });
+}
+
 async function renderRunPreview(runId, reportUrl) {
   const preview = $("run-preview");
   if (!preview || !runId) return;
@@ -237,6 +242,13 @@ function appendBubble(msg) {
   bubble.className = "bubble";
   bubble.textContent = msg.text || "";
   stack.appendChild(bubble);
+  const meta = document.createElement("div");
+  meta.className = "message-meta";
+  meta.textContent = msg.role === "user" ? `${timeLabel(msg.created_at)} · gönderildi` : `${timeLabel(msg.created_at)} · analiz tamamlandı`;
+  stack.appendChild(meta);
+  if (msg.role !== "user" && msg.run) {
+    stack.appendChild(responseCard(msg));
+  }
   if (msg.report_url) {
     const a = document.createElement("a");
     a.href = msg.report_url;
@@ -271,6 +283,44 @@ function appendBubble(msg) {
   }
 }
 
+function responseCard(msg) {
+  const run = msg.run || {};
+  const report = run.investigation_report || {};
+  const card = document.createElement("div");
+  card.className = "answer-card";
+  const title = document.createElement("strong");
+  title.textContent = "Analiz özeti";
+  const source = document.createElement("span");
+  source.textContent = `Kaynak: ${$("context-dataset")?.textContent || "bağlı veri seti"}`;
+  card.append(title, source);
+
+  const facts = document.createElement("div");
+  facts.className = "answer-facts";
+  const k = report.kpis || {};
+  for (const [label, value] of [
+    ["Değişim", k.change_pct == null ? "—" : `${String(k.change_pct).replace(".", ",")}%`],
+    ["Kırılım", k.concentration || "—"],
+    ["Kanıt", `${(run.evidence || []).length} kayıt`],
+  ]) {
+    const item = document.createElement("div");
+    const small = document.createElement("small");
+    small.textContent = label;
+    const b = document.createElement("b");
+    b.textContent = value;
+    item.append(small, b);
+    facts.appendChild(item);
+  }
+  card.appendChild(facts);
+
+  const first = (report.headline_findings || [])[0];
+  if (first?.text) {
+    const finding = document.createElement("p");
+    finding.textContent = first.text;
+    card.appendChild(finding);
+  }
+  return card;
+}
+
 function setThinking(on) {
   const old = document.getElementById("thinking");
   if (old) old.remove();
@@ -281,7 +331,7 @@ function setThinking(on) {
   row.id = "thinking";
   row.className = "row assistant";
   row.innerHTML =
-    `<span class="avatar assistant">${ICONS.assistant}</span><p class="bubble thinking"><span class="loader" aria-hidden="true"></span><span>İşleniyor</span></p>`;
+    `<span class="avatar assistant">${ICONS.assistant}</span><div class="stack"><p class="bubble thinking"><span class="loader" aria-hidden="true"></span><span>Analiz ediliyor</span></p><div class="message-meta">${timeLabel()} · çalışıyor</div></div>`;
   $("log").appendChild(row);
   $("log").scrollTop = $("log").scrollHeight;
 }

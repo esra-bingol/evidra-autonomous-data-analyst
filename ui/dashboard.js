@@ -5,19 +5,23 @@ function token(name) {
 }
 
 function themedFigure(figure) {
-  const palette = [token("--accent"), token("--green"), "#8a6590", token("--amber"), token("--rose")];
+  const palette = [token("--accent-strong"), token("--green"), token("--amber"), token("--blue"), token("--rose")];
   const grid = token("--border");
   const text = token("--text-secondary");
   const surface = token("--surface-subtle");
   const source = figure.layout || {};
   const data = (figure.data || []).map((trace, index) => {
     const color = palette[index % palette.length];
+    const isLine = String(trace.mode || "").includes("lines") || trace.type === "scatter";
     return {
       ...trace,
+      fill: trace.fill || (isLine ? "tozeroy" : undefined),
+      fillcolor: trace.fillcolor || (isLine ? "rgba(112, 71, 122, 0.14)" : undefined),
+      hovertemplate: trace.hovertemplate || "%{x}<br><b>%{y:,.2f}</b><extra></extra>",
       marker: {
         ...(trace.marker || {}),
         color: trace.marker?.color || color,
-        line: { width: 0, ...(trace.marker?.line || {}) },
+        line: { width: 1, color: "rgba(255,255,255,0.75)", ...(trace.marker?.line || {}) },
       },
       line: { ...(trace.line || {}), color: trace.line?.color || color, width: trace.line?.width || 2.5 },
     };
@@ -40,6 +44,7 @@ function themedFigure(figure) {
       yaxis: { ...axis, ...(source.yaxis || {}) },
       margin: { l: 44, r: 14, t: 28, b: 38 },
       height: 272,
+      barmode: source.barmode || "group",
       bargap: 0.28,
       showlegend: data.length > 1,
       legend: { orientation: "h", x: 0, y: 1.12, font: { size: 9 } },
@@ -180,6 +185,17 @@ function renderRecent(runs) {
   }
 }
 
+function renderSkeleton() {
+  const evidence = $("evidence-kpis");
+  if (evidence && !evidence.children.length) {
+    evidence.innerHTML = '<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>';
+  }
+  const recent = $("recent-list");
+  if (recent) {
+    recent.innerHTML = '<div class="recent-item skeleton-line"></div><div class="recent-item skeleton-line"></div><div class="recent-item skeleton-line"></div>';
+  }
+}
+
 function friendlyChartTitle(chart, question) {
   if (chart.purpose && CHART_PLAIN[chart.purpose]) return CHART_PLAIN[chart.purpose];
   if (chart.title && !/[_]|fare_amount|sales eğilimi/i.test(chart.title)) return chart.title;
@@ -219,6 +235,97 @@ function renderCharts(run) {
   });
 }
 
+function metricCard(label, value, hint) {
+  const card = document.createElement("div");
+  const small = document.createElement("small");
+  small.textContent = label;
+  const strong = document.createElement("strong");
+  strong.textContent = value;
+  card.append(small, strong);
+  if (hint) {
+    const note = document.createElement("small");
+    note.textContent = hint;
+    card.appendChild(note);
+  }
+  return card;
+}
+
+function renderEvidenceKpis(run) {
+  const box = $("evidence-kpis");
+  if (!box) return;
+  box.replaceChildren();
+  if (!run) return;
+  const report = run.investigation_report || {};
+  const k = report.kpis || {};
+  box.append(
+    metricCard(k.metric_noun || "Metrik", formatPct(k.change_pct), "Dönem değişimi"),
+    metricCard("Hacim", shortPct(k.volume_change_pct), "Sipariş sayısı"),
+    metricCard("Sepet", shortPct(k.aov_change_pct), "Ortalama sipariş"),
+    metricCard("Kırılım", k.concentration || "—", "Öne çıkan alan"),
+  );
+}
+
+let evidenceSort = { key: "share_pct", dir: "desc" };
+
+function sortRows(rows) {
+  const { key, dir } = evidenceSort;
+  return [...rows].sort((a, b) => {
+    const av = a[key];
+    const bv = b[key];
+    const result =
+      typeof av === "number" && typeof bv === "number"
+        ? av - bv
+        : String(av ?? "").localeCompare(String(bv ?? ""), "tr");
+    return dir === "asc" ? result : -result;
+  });
+}
+
+function renderEvidenceTable(run) {
+  const table = $("evidence-table");
+  if (!table) return;
+  const body = table.querySelector("tbody");
+  body.replaceChildren();
+  const rows = run?.investigation_report?.slice_table || [];
+  if (!rows.length) {
+    table.classList.add("hidden");
+    return;
+  }
+  table.classList.remove("hidden");
+  for (const row of sortRows(rows).slice(0, 8)) {
+    const tr = document.createElement("tr");
+    for (const value of [
+      row.label,
+      formatNumber(row.previous),
+      formatNumber(row.current),
+      formatNumber(row.change),
+      row.share_pct == null ? "—" : `%${String(row.share_pct).replace(".", ",")}`,
+    ]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.appendChild(td);
+    }
+    body.appendChild(tr);
+  }
+}
+
+function bindEvidenceTableSort() {
+  document.querySelectorAll("#evidence-table th[data-sort]").forEach((th) => {
+    th.addEventListener("click", () => {
+      const key = th.dataset.sort;
+      evidenceSort = {
+        key,
+        dir: evidenceSort.key === key && evidenceSort.dir === "desc" ? "asc" : "desc",
+      };
+      loadDashboard();
+    });
+  });
+}
+
+function formatNumber(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
+  return Number(value).toLocaleString("tr-TR", { maximumFractionDigits: 2 });
+}
+
 function renderMetrics(run) {
   const empty = !run;
   const kpi = empty ? {} : kpisFrom(run);
@@ -241,7 +348,26 @@ function renderMetrics(run) {
     : "Ayrıntılı yorum için raporu açın.";
 }
 
+function renderActivity(runs) {
+  const list = $("activity-list");
+  if (!list) return;
+  list.replaceChildren();
+  const items = runs.slice(0, 4);
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.textContent = "Henüz analiz çalışmadı. Veri yükleyip ilk soruyu sorduğunuzda akış oluşur.";
+    list.appendChild(li);
+    return;
+  }
+  for (const run of items) {
+    const li = document.createElement("li");
+    li.textContent = `${shortDecision(run)} · ${run.question || "Adsız inceleme"}`;
+    list.appendChild(li);
+  }
+}
+
 async function loadDashboard() {
+  renderSkeleton();
   const response = await fetch("/runs");
   if (!response.ok) return;
   const metadata = (await response.json()).runs || [];
@@ -254,8 +380,11 @@ async function loadDashboard() {
     })
   );
   renderRecent(details);
+  renderActivity(details);
   const latest = details[0] || null;
   renderMetrics(latest);
+  renderEvidenceKpis(latest);
+  renderEvidenceTable(latest);
   renderCharts(latest);
   const workspace = $("workspace-name");
   if (workspace && latest) {
@@ -263,4 +392,7 @@ async function loadDashboard() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", loadDashboard);
+document.addEventListener("DOMContentLoaded", () => {
+  bindEvidenceTableSort();
+  loadDashboard();
+});

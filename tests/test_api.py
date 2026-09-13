@@ -43,7 +43,7 @@ def test_console_is_four_blocks_not_chat(client: TestClient):
     assert dashboard.status_code == 200
     assert "Genel bakış" in dashboard.text
     assert "kpi-decision" in dashboard.text
-    assert "Nerede yoğunlaştı" in dashboard.text
+    assert "Öne çıkan kırılım" in dashboard.text
     assert "Verini yükle" in dashboard.text
     assert "Birincil sürücü" not in dashboard.text
     assert "Özerk veri analisti" not in dashboard.text

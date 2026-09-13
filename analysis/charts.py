@@ -10,6 +10,11 @@ from analysis.policy import detect_intent
 
 MAX_CHARTS = 4
 _SKIP_DIM = {"previous", "current", "change", "share_of_change"}
+_PURPLE = "#44264d"
+_SAGE = "#506f5b"
+_MUSTARD = "#a16f2b"
+_ROSE = "#ad5264"
+_BLUE = "#425f80"
 
 
 def build_charts(run: dict[str, Any]) -> list[dict[str, Any]]:
@@ -62,6 +67,11 @@ def _trend_line(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | Non
             x=[str(x0), str(x1)],
             y=[float(prev), float(curr)],
             mode="lines+markers",
+            fill="tozeroy",
+            fillcolor="rgba(112, 71, 122, 0.14)",
+            line={"color": _PURPLE, "width": 3},
+            marker={"color": _PURPLE, "size": 9, "line": {"color": "#fffdfb", "width": 2}},
+            hovertemplate="%{x}<br><b>%{y:,.2f}</b><extra>Dönem değişimi</extra>",
         )
     )
     return _pack(
@@ -84,7 +94,14 @@ def _segment_bar(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | No
     ys = [float(r.get("change") or 0) for r in rows[:12]]
     if not any(ys):
         return None
-    fig = go.Figure(go.Bar(x=xs, y=ys))
+    fig = go.Figure(
+        go.Bar(
+            x=xs,
+            y=ys,
+            marker={"color": [_ROSE if y < 0 else _SAGE for y in ys], "line": {"color": "#fffdfb", "width": 1}},
+            hovertemplate="%{x}<br><b>%{y:,.2f}</b><extra>Dilim değişimi</extra>",
+        )
+    )
     return _pack(
         run,
         kind="bar",
@@ -113,6 +130,10 @@ def _contribution(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | N
             x=[a for a, _ in labeled],
             y=[b for _, b in labeled],
             measure=["relative"] * len(labeled),
+            increasing={"marker": {"color": _SAGE}},
+            decreasing={"marker": {"color": _ROSE}},
+            totals={"marker": {"color": _MUSTARD}},
+            hovertemplate="%{x}<br><b>%{y:,.2f}</b><extra>Katkı</extra>",
         )
     )
     return _pack(
@@ -138,7 +159,14 @@ def _volume_aov(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | Non
         ys.append(float(val[key]))
     if len(ys) < 2:
         return None
-    fig = go.Figure(go.Bar(x=names, y=ys))
+    fig = go.Figure(
+        go.Bar(
+            x=names,
+            y=ys,
+            marker={"color": [_BLUE, _PURPLE][: len(ys)], "line": {"color": "#fffdfb", "width": 1}},
+            hovertemplate="%{x}<br><b>%{y:.2f}%</b><extra>Hacim / sepet</extra>",
+        )
+    )
     return _pack(
         run,
         kind="bar",
@@ -157,6 +185,8 @@ def _anomaly_bar(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | No
         go.Bar(
             x=[str(r.get("period")) for r in monthly],
             y=[float(r.get("z")) for r in monthly],
+            marker={"color": _MUSTARD, "line": {"color": "#fffdfb", "width": 1}},
+            hovertemplate="%{x}<br><b>z=%{y:.2f}</b><extra>Aykırı dönem</extra>",
         )
     )
     return _pack(
@@ -178,7 +208,21 @@ def _pack(
     evidence_ids: list[str],
     fig: go.Figure,
 ) -> dict[str, Any]:
-    fig.update_layout(title=title, margin=dict(l=40, r=20, t=48, b=40), height=320)
+    fig.update_layout(
+        title=title,
+        margin=dict(l=40, r=20, t=48, b=40),
+        height=320,
+        plot_bgcolor="#faf8f6",
+        paper_bgcolor="rgba(0,0,0,0)",
+        hoverlabel={
+            "bgcolor": "#28242d",
+            "bordercolor": "#28242d",
+            "font": {"color": "#fffdfb", "family": "Inter, Segoe UI, sans-serif"},
+        },
+        font={"family": "Inter, Segoe UI, sans-serif", "color": "#625c67"},
+    )
+    fig.update_xaxes(gridcolor="#e1dbd7", zeroline=False)
+    fig.update_yaxes(gridcolor="#e1dbd7", zeroline=False)
     return {
         "kind": kind,
         "purpose": purpose,

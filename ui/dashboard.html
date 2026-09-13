@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Evidra — Genel bakış</title>
-    <link rel="stylesheet" href="/static/dashboard.css?v=5" />
+    <link rel="stylesheet" href="/static/dashboard.css?v=6" />
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="/static/dashboard.js?v=5" defer></script>
+    <script src="/static/dashboard.js?v=6" defer></script>
   </head>
   <body>
     <aside class="rail">
@@ -82,74 +82,110 @@
         </div>
       </header>
 
-      <section class="hero">
-        <div class="hero-copy">
-          <p class="eyebrow">Nasıl çalışır</p>
-          <h2>Verini yükle,<br />sorunu sor,<br /><em>kanıtı gör.</em></h2>
-          <p>Evidra verini okur, sorunu analiz planına çevirir ve değişimin nerede, ne kadar ve hangi kırılımda göründüğünü kanıtlarıyla açıklar.</p>
-          <div class="hero-actions">
-            <a class="primary" href="/chat">Analize başla</a>
-            <a class="text-link" href="/console">Veri yükle <span>→</span></a>
-          </div>
-        </div>
-        <div class="hero-visual" aria-label="Evidra nasıl çalışır">
-          <div class="visual-toolbar">
-            <span><img src="/static/evidra-logo.svg" alt="" /> Bir inceleme böyle akar</span>
-            <small>4 adım</small>
-          </div>
-          <div class="visual-flow">
-            <div><span>01</span><strong>Verini yükle</strong><small>CSV, Excel veya hazır örnek set</small></div>
-            <div><span>02</span><strong>Sorunu sor</strong><small>Örn. Satışlar neden düştü?</small></div>
-            <div><span>03</span><strong>Açıklamaları test et</strong><small>Dönem, dilim, hacim ve sepet</small></div>
-            <div><span>04</span><strong>Sonucu sun</strong><small>Grafik, bulgu ve detaylı rapor</small></div>
-          </div>
-          <div class="visual-result">
-            <div><small>Sana kalan</small><strong>Kanıtlı grafikler, yayımlanan bulgular ve paylaşılabilir rapor</strong></div>
-            <span>Doğrulanmış</span>
-          </div>
-        </div>
-      </section>
+      <section class="dashboard-shell">
+        <div class="dashboard-main">
+          <section class="hero hero-compact">
+            <div class="hero-copy">
+              <p class="eyebrow">Nasıl çalışır</p>
+              <h2>Verini yükle, sorunu sor, kanıtı gör.</h2>
+              <p>Evidra verini analiz planına çevirir; değişimin nerede, ne kadar ve hangi kırılımda göründüğünü kanıtlarıyla açıklar.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="primary" href="/chat">Analize başla</a>
+              <a class="secondary" href="/console">Veri yükle</a>
+            </div>
+          </section>
 
-      <section class="metrics" aria-label="Son inceleme göstergeleri">
-        <article><span class="metric-icon plum">●</span><div><small>Son incelemenin sonucu</small><strong id="kpi-decision">—</strong></div></article>
-        <article><span class="metric-icon green">%</span><div><small>Ne kadar değişti</small><strong id="kpi-change">—</strong></div></article>
-        <article><span class="metric-icon amber">↗</span><div><small>Nerede yoğunlaştı</small><strong id="kpi-driver">—</strong></div></article>
-        <article><span class="metric-icon rose">▣</span><div><small>Hacim ve sepet</small><strong id="kpi-volume">—</strong></div></article>
-      </section>
-      <p id="kpi-limitation" class="kpi-limitation">Bu alan son incelemenin kısa özetidir. Ayrıntılar için raporu açabilirsiniz.</p>
+          <section class="metrics" aria-label="Hızlı istatistikler">
+            <article><span class="metric-icon plum">●</span><div><small>Son inceleme</small><strong id="kpi-decision">—</strong></div></article>
+            <article><span class="metric-icon green">%</span><div><small>Değişim oranı</small><strong id="kpi-change">—</strong></div></article>
+            <article><span class="metric-icon amber">↗</span><div><small>Öne çıkan kırılım</small><strong id="kpi-driver">—</strong></div></article>
+            <article><span class="metric-icon rose">▣</span><div><small>Hacim / sepet</small><strong id="kpi-volume">—</strong></div></article>
+          </section>
+          <p id="kpi-limitation" class="kpi-limitation">Son inceleme çalıştığında buradaki kartlar ve grafikler otomatik güncellenir.</p>
 
-      <section class="dashboard-grid">
-        <article class="panel chart-panel">
-          <div class="panel-head">
-            <div><p class="eyebrow">Son sorunun görseli</p><h2>Kanıttan üretilen grafik</h2></div>
-            <a href="/chat">Yeni soru</a>
-          </div>
-          <div id="chart-gallery" class="chart-gallery">
-            <div class="empty-state"><strong>Henüz grafik yok</strong><p>Bir iş sorusu sorduğunuzda dönem değişimi veya dilim karşılaştırması burada görünür.</p></div>
-          </div>
-        </article>
-
-        <article class="panel recent-panel" id="recent">
-          <div class="panel-head">
-            <div><p class="eyebrow">Geçmiş</p><h2>Açabileceğin raporlar</h2></div>
-          </div>
-          <div id="recent-list" class="recent-list">
-            <div class="empty-state"><strong>Henüz inceleme yok</strong><p>İlk iş sorunuzu sorarak başlayın.</p></div>
-          </div>
-        </article>
-      </section>
-
-      <section class="how-it-works">
-        <div class="section-intro">
-          <p class="eyebrow">İş akışı</p>
-          <h2>Genel bakışta ne olur?</h2>
+          <article class="panel chart-panel">
+            <div class="panel-head">
+              <div><p class="eyebrow">Kanıt alanı</p><h2>Kanıttan üretilen grafikler</h2></div>
+              <a href="/chat">Yeni soru</a>
+            </div>
+            <div id="evidence-kpis" class="evidence-kpis" aria-label="Kanıt KPI kartları"></div>
+            <div id="chart-gallery" class="chart-gallery">
+              <div class="empty-state"><strong>Henüz grafik yok</strong><p>Bir iş sorusu sorduğunuzda dönem değişimi veya dilim karşılaştırması burada görünür.</p></div>
+            </div>
+            <div class="evidence-table-wrap">
+              <div class="panel-head compact">
+                <div><p class="eyebrow">Kanıt tablosu</p><h2>İlk kırılımlar</h2></div>
+              </div>
+              <table id="evidence-table" class="evidence-table hidden">
+                <thead>
+                  <tr>
+                    <th data-sort="label">Dilim</th>
+                    <th data-sort="previous">Önceki</th>
+                    <th data-sort="current">Güncel</th>
+                    <th data-sort="change">Değişim</th>
+                    <th data-sort="share_pct">Pay</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </article>
         </div>
-        <div class="steps">
-          <article><span>01</span><h3>Verini yükle</h3><p>Kendi CSV / Excel dosyanı getir veya hazır bir örnek seti bağla. SQL yazmana gerek yok.</p></article>
-          <article><span>02</span><h3>Sorunu sor</h3><p>Doğal dilde sor: satış neden düştü, hangi bölge önde, teslimat puanı etkiler mi.</p></article>
-          <article><span>03</span><h3>Açıklamaları test ederiz</h3><p>Dönemleri, dilimleri, hacim ve sepet tutarını kayıtlı araçlarla karşılaştırırız.</p></article>
-          <article><span>04</span><h3>Kanıtı teslim ederiz</h3><p>Grafikler, yayımlanan bulgular ve detaylı rapor aynı incelemeden çıkar; her sayı bir kanıta bağlıdır.</p></article>
-        </div>
+
+        <aside class="insight-column">
+          <article class="panel status-panel">
+            <div class="panel-head compact">
+              <div><p class="eyebrow">Sistem durumu</p><h2>Analiz motoru</h2></div>
+              <span class="status-pill">Hazır</span>
+            </div>
+            <div class="status-grid">
+              <div><small>Veri okuma</small><strong>Aktif</strong></div>
+              <div><small>Kanıt kontrolü</small><strong>Zorunlu</strong></div>
+              <div><small>Raporlama</small><strong>Hazır</strong></div>
+            </div>
+          </article>
+
+          <article class="panel activity-panel">
+            <div class="panel-head compact">
+              <div><p class="eyebrow">Son aktiviteler</p><h2>Akış</h2></div>
+            </div>
+            <ol id="activity-list" class="activity-list">
+              <li>Veri bağlandığında analiz geçmişi burada özetlenir.</li>
+            </ol>
+          </article>
+
+          <article class="panel pending-panel">
+            <div class="panel-head compact">
+              <div><p class="eyebrow">Bekleyen analizler</p><h2>Takip soruları</h2></div>
+            </div>
+            <div class="pending-list">
+              <a href="/chat">Satış neden değişti?</a>
+              <a href="/chat">Hangi kategori öne çıkıyor?</a>
+              <a href="/chat">Hangi bölge daha zayıf?</a>
+            </div>
+          </article>
+
+          <article class="panel recent-panel" id="recent">
+            <div class="panel-head compact">
+              <div><p class="eyebrow">Geçmiş</p><h2>Açabileceğin raporlar</h2></div>
+            </div>
+            <div id="recent-list" class="recent-list">
+              <div class="empty-state"><strong>Henüz inceleme yok</strong><p>İlk iş sorunuzu sorarak başlayın.</p></div>
+            </div>
+          </article>
+
+          <article class="panel proof-panel">
+            <div class="panel-head compact">
+              <div><p class="eyebrow">Kanıt modeli</p><h2>Güvenilir cevap</h2></div>
+            </div>
+            <ul>
+              <li>Her metrik hesaplanan kanıta bağlıdır.</li>
+              <li>Belirsiz yerde tek kaynak işaretlenmez.</li>
+              <li>Detaylı raporda grafik, bulgu ve sınırlar birlikte görünür.</li>
+            </ul>
+          </article>
+        </aside>
       </section>
     </main>
   </body>
