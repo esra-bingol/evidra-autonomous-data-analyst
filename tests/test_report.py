@@ -56,6 +56,12 @@ def test_report_uses_published_claims_only():
     assert "associated" not in blob.lower()
     assert "template" not in blob.lower()
     assert any("ilişki" in n for n in report["limitations"])
+    kpis = report["kpis"]
+    assert kpis["change_pct"] is not None
+    assert "West" in kpis["concentration"] or "west" in kpis["concentration"].lower()
+    assert report["slice_table"]
+    assert report["slice_table"][0]["label"]
+    assert "share_of_change" not in report["slice_table"][0]
 
 
 def test_charts_bind_evidence_and_are_not_a_fixed_count():

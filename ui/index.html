@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Evidra — İnceleme konsolu</title>
-    <link rel="stylesheet" href="/static/console.css?v=8" />
+    <link rel="stylesheet" href="/static/console.css?v=9" />
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="/static/console.js?v=8" defer></script>
+    <script src="/static/console.js?v=9" defer></script>
   </head>
   <body>
     <aside class="rail">
@@ -15,7 +15,7 @@
           <img src="/static/evidra-logo.svg" alt="" />
         </span>
         <div>
-          <p class="eyebrow">Data workspace</p>
+          <p class="eyebrow">Veri analisti</p>
           <p class="brand-name">Evidra</p>
         </div>
       </div>
@@ -29,7 +29,7 @@
 
       <nav class="rail-nav" aria-label="Ana navigasyon">
         <div class="nav-group">
-          <p class="nav-heading">Analysis</p>
+          <p class="nav-heading">Analiz</p>
           <a class="nav-link" href="/dashboard">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
               <path d="M4 4h6v6H4V4Zm10 0h6v10h-6V4ZM4 14h6v6H4v-6Zm10 4h6v2h-6v-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
@@ -50,7 +50,7 @@
           </a>
         </div>
         <div class="nav-group">
-          <p class="nav-heading">Insights</p>
+          <p class="nav-heading">İçgörüler</p>
           <a class="nav-link" href="#history">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
               <path d="M12 7v5l3 2M5.6 5.6A9 9 0 1 1 3 12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
@@ -60,7 +60,7 @@
           </a>
         </div>
         <div class="nav-group">
-          <p class="nav-heading">Settings</p>
+          <p class="nav-heading">Ayarlar</p>
           <a class="nav-link" href="#block-upload">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
               <ellipse cx="12" cy="6" rx="7" ry="3" stroke="currentColor" stroke-width="1.7" />
@@ -72,7 +72,7 @@
       </nav>
 
       <div class="rail-note">
-        <p class="rail-note-title">Evidence-first analysis</p>
+        <p class="rail-note-title">Önce kanıt</p>
         <p>Sonuçlar kayıtlı araçlar ve doğrulanmış kanıtlarla oluşturulur.</p>
       </div>
     </aside>
@@ -80,7 +80,7 @@
     <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">Analysis</p>
+          <p class="eyebrow">Analiz</p>
           <h1>İnceleme konsolu</h1>
           <p class="page-description">Veri setini bağlayın, iş sorunuzu tanımlayın ve inceleme akışını tek ekrandan takip edin.</p>
         </div>
@@ -160,25 +160,28 @@
             </span>
             <div>
               <p class="section-kicker">Step 03</p>
-              <h2>İnceleme planı</h2>
+              <h2>Nasıl bakıldı</h2>
             </div>
           </div>
-          <p id="plan-empty" class="empty">İnceleme başlatıldığında araç adımları burada görüntülenir.</p>
+          <p id="plan-empty" class="empty">İnceleme başlatıldığında atılan adımlar burada sırayla görünür.</p>
           <p id="plan-loading" class="empty loading hidden"><span class="loader" aria-hidden="true"></span>İşleniyor</p>
-          <div class="table-wrap">
-            <table id="plan-table" class="hidden">
-              <thead>
-                <tr>
-                  <th>Araç</th>
-                  <th>Durum</th>
-                  <th>Süre</th>
-                  <th>Özet</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
-          <p id="plan-steps" class="mono hidden"></p>
+          <ol id="plan-steps" class="plan-steps hidden"></ol>
+          <details id="plan-trace" class="tech hidden">
+            <summary>Araç izi ve süreler</summary>
+            <div class="table-wrap">
+              <table id="plan-table">
+                <thead>
+                  <tr>
+                    <th>Araç</th>
+                    <th>Durum</th>
+                    <th>Süre</th>
+                    <th>Özet</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </details>
         </section>
 
         <section class="block card" id="block-findings">
@@ -190,27 +193,48 @@
             </span>
             <div>
               <p class="section-kicker">Step 04</p>
-              <h2>Bulgular ve kanıtlar</h2>
+              <h2>Sonuç</h2>
             </div>
           </div>
-          <p id="findings-empty" class="empty">Doğrulanmış bulgular ve kanıt kayıtları burada görüntülenir.</p>
+          <p id="findings-empty" class="empty">Sonuç, rakamlar ve grafikler inceleme bitince burada görünür.</p>
           <div id="decision-bar" class="hidden"></div>
-          <div id="reviews"></div>
-          <div id="claims"></div>
+          <p id="summary-text" class="summary-text hidden"></p>
+          <div id="kpi-row" class="kpi-row hidden"></div>
+          <ol id="findings-list" class="findings-list hidden"></ol>
           <div id="charts"></div>
           <div class="table-wrap">
-            <table id="evidence-table" class="hidden">
+            <table id="slice-table" class="hidden">
               <thead>
                 <tr>
-                  <th>Kanıt ID</th>
-                  <th>İşlem</th>
-                  <th>Güç</th>
-                  <th>Değer</th>
+                  <th>Dilim</th>
+                  <th>Önceki</th>
+                  <th>Güncel</th>
+                  <th>Fark</th>
+                  <th>Payı</th>
                 </tr>
               </thead>
               <tbody></tbody>
             </table>
           </div>
+          <ul id="caveats" class="caveats hidden"></ul>
+          <details id="tech" class="tech hidden">
+            <summary>Teknik ayrıntı: iddialar, kanıt kayıtları, denetim</summary>
+            <div id="reviews"></div>
+            <div id="claims"></div>
+            <div class="table-wrap">
+              <table id="evidence-table">
+                <thead>
+                  <tr>
+                    <th>Kanıt ID</th>
+                    <th>İşlem</th>
+                    <th>Güç</th>
+                    <th>Değer</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </details>
         </section>
       </div>
     </main>

@@ -1,19 +1,15 @@
 const $ = (id) => document.getElementById(id);
 
-function chip(text) {
-  const s = document.createElement("span");
-  s.className = "chip";
-  s.textContent = text;
-  return s;
-}
+const CHART_PLAIN = {
+  trend: "Dönemler arası değişim",
+  contribution: "Hangi dilim değişime katkı verdi",
+  segment_comparison: "Dilim karşılaştırması",
+  metric_comparison: "Hacim ve sepet tutarı",
+  distribution: "Sıra dışı dönemler",
+};
 
-function section(title, className = "") {
-  const el = document.createElement("section");
-  el.className = `report-card ${className}`.trim();
-  const h = document.createElement("h2");
-  h.textContent = title;
-  el.appendChild(h);
-  return el;
+function themeValue(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
 function para(text) {
@@ -22,25 +18,34 @@ function para(text) {
   return p;
 }
 
-function list(items) {
-  const ul = document.createElement("ul");
-  for (const item of items || []) {
-    const li = document.createElement("li");
-    li.textContent = item;
-    ul.appendChild(li);
-  }
-  return ul;
+function fmtPct(n, withSign = true) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  const value = Number(n);
+  const abs = Math.abs(value);
+  let text = abs.toFixed(2).replace(/\.?0+$/, "").replace(".", ",");
+  if (!text) text = "0";
+  if (!withSign) return `%${text}`;
+  if (value < 0) return `%${text} azaldı`;
+  if (value > 0) return `%${text} arttı`;
+  return "%0";
 }
 
-function themeValue(name) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function fmtNum(n) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  const value = Number(n);
+  const abs = Math.abs(value);
+  const text =
+    abs >= 100
+      ? abs.toLocaleString("tr-TR", { maximumFractionDigits: 1 })
+      : abs.toLocaleString("tr-TR", { maximumFractionDigits: 2 });
+  return value < 0 ? `−${text}` : text;
 }
 
-function kindLabel(kind) {
-  if (kind === "line") return "çizgi";
-  if (kind === "waterfall") return "şelale";
-  if (kind === "bar") return "sütun";
-  return kind || "grafik";
+function toneClass(n) {
+  if (n == null) return "";
+  if (n < 0) return "down";
+  if (n > 0) return "up";
+  return "";
 }
 
 function themedFigure(figure) {
@@ -76,11 +81,11 @@ function themedFigure(figure) {
       font: { ...(source.font || {}), family: themeValue("--font-sans"), color: text },
       xaxis: { ...axis, ...(source.xaxis || {}) },
       yaxis: { ...axis, ...(source.yaxis || {}) },
-      margin: { l: 48, r: 24, t: 48, b: 44, ...(source.margin || {}) },
-      height: 360,
+      margin: { l: 48, r: 16, t: 16, b: 44, ...(source.margin || {}) },
+      height: 280,
       bargap: 0.28,
       barcornerradius: 6,
-      legend: { orientation: "h", x: 0, y: 1.12, ...(source.legend || {}) },
+      showlegend: false,
       hoverlabel: {
         bgcolor: themeValue("--color-text"),
         bordercolor: themeValue("--color-text"),
@@ -90,187 +95,222 @@ function themedFigure(figure) {
   };
 }
 
+function kpiCard(label, value, hint, tone) {
+  const el = document.createElement("div");
+  el.className = `kpi ${tone || ""}`.trim();
+  const cap = document.createElement("span");
+  cap.textContent = label;
+  const strong = document.createElement("strong");
+  strong.textContent = value;
+  el.append(cap, strong);
+  if (hint) {
+    const small = document.createElement("small");
+    small.textContent = hint;
+    el.appendChild(small);
+  }
+  return el;
+}
+
+function card(title, extraClass = "") {
+  const el = document.createElement("section");
+  el.className = `report-card ${extraClass}`.trim();
+  if (title) {
+    const h = document.createElement("h2");
+    h.textContent = title;
+    el.appendChild(h);
+  }
+  return el;
+}
+
 function renderReport(run, report) {
   const doc = $("doc");
   doc.replaceChildren();
-
+  const kpis = report.kpis || {};
   const findings = report.headline_findings || [];
-  const published = report.key_findings || [];
-  const evidence = report.evidence || [];
   const visualizations = report.visualizations || [];
+  const slices = report.slice_table || [];
+  const next = report.recommended_next_investigations || [];
+  const limits = (report.limitations || []).slice(0, 4);
+  const periodHint = [kpis.previous_period, kpis.current_period].filter(Boolean).join(" → ");
 
   const hero = document.createElement("section");
   hero.className = "report-hero";
-  const heroCopy = document.createElement("div");
-  heroCopy.className = "hero-copy";
   const kicker = document.createElement("p");
   kicker.className = "eyebrow";
-  kicker.textContent = "Evidra investigation";
-  const heroTitle = document.createElement("h2");
-  heroTitle.textContent = report.title || "Evidra incelemesi";
-  const question = document.createElement("p");
-  question.className = "hero-question";
-  question.textContent = report.investigation_question || run.question || "";
-  heroCopy.append(kicker, heroTitle);
-  if (question.textContent) heroCopy.appendChild(question);
-  heroCopy.appendChild(para(report.executive_summary || ""));
-  const metrics = document.createElement("div");
-  metrics.className = "hero-metrics";
-  const metricValues = [
-    ["Sonuç", report.decision_label || run.decision || "—"],
-    ["Bulgular", String(findings.length || published.length)],
-    ["Kanıtlar", String(evidence.length)],
-    ["Grafikler", String(visualizations.length)],
-  ];
-  for (const [label, value] of metricValues) {
-    const metric = document.createElement("div");
-    metric.className = "hero-metric";
-    const caption = document.createElement("span");
-    caption.textContent = label;
-    const strong = document.createElement("strong");
-    strong.textContent = value;
-    metric.append(caption, strong);
-    metrics.appendChild(metric);
-  }
-  hero.append(heroCopy, metrics);
+  kicker.textContent = "Veri analisti brifingi";
+  const title = document.createElement("h2");
+  title.textContent = report.title || "İnceleme raporu";
+  const asked = document.createElement("p");
+  asked.className = "hero-question";
+  asked.textContent = report.investigation_question || run.question || "";
+  const summary = para(report.executive_summary || "");
+  summary.className = "hero-summary";
+  hero.append(kicker, title);
+  if (asked.textContent) hero.appendChild(asked);
+  hero.appendChild(summary);
   doc.appendChild(hero);
 
-  const sFind = section("Temel bulgular", "wide");
-  if (!findings.length) sFind.appendChild(para("Yayımlanmış bulgu yok."));
-  const ol = document.createElement("ol");
-  ol.className = "headline-findings";
-  for (const f of findings) {
-    const li = document.createElement("li");
-    const title = document.createElement("strong");
-    title.textContent = f.text || "";
-    li.appendChild(title);
-    const chips = document.createElement("div");
-    chips.className = "chips";
-    for (const id of f.evidence_ids || []) chips.appendChild(chip(id));
-    if (chips.childNodes.length) li.appendChild(chips);
-    ol.appendChild(li);
-  }
-  if (findings.length) sFind.appendChild(ol);
-  doc.appendChild(sFind);
-
-  const s2 = section("Veri seti özeti");
-  const ov = report.dataset_overview || {};
-  s2.appendChild(
-    para(`${ov.n_rows ?? "—"} satır · ${ov.n_cols ?? "—"} kolon · ${ov.n_tables ?? "—"} tablo`)
+  const kpiRow = document.createElement("section");
+  kpiRow.className = "kpi-row";
+  kpiRow.append(
+    kpiCard(
+      `${kpis.metric_noun || "Metrik"} değişimi`,
+      fmtPct(kpis.change_pct),
+      periodHint,
+      toneClass(kpis.change_pct),
+    ),
+    kpiCard("Sipariş sayısı", fmtPct(kpis.volume_change_pct), "Adet", toneClass(kpis.volume_change_pct)),
+    kpiCard(
+      "Ortalama sepet",
+      fmtPct(kpis.aov_change_pct),
+      "Sipariş başına tutar",
+      toneClass(kpis.aov_change_pct),
+    ),
+    kpiCard(
+      "Nerede yoğunlaştı",
+      kpis.concentration || "—",
+      kpis.n_rows ? `${kpis.n_rows} satır incelendi` : "",
+    ),
   );
-  if ((ov.capabilities_present || []).length) {
-    const chips = document.createElement("div");
-    chips.className = "chips";
-    for (const c of ov.capabilities_present) chips.appendChild(chip(c));
-    s2.appendChild(chips);
+  doc.appendChild(kpiRow);
+
+  const vizCard = card("Grafikler", "wide");
+  if (!visualizations.length) {
+    vizCard.appendChild(para("Bu incelemede amaçlı bir grafik yok — soru mevcut kanıtla görselleştirilmedi."));
+  } else {
+    const grid = document.createElement("div");
+    grid.className = "charts-grid";
+    visualizations.forEach((ch, i) => {
+      const cell = document.createElement("figure");
+      cell.className = "chart-cell";
+      const cap = document.createElement("figcaption");
+      cap.textContent = CHART_PLAIN[ch.purpose] || ch.title || "Grafik";
+      const plot = document.createElement("div");
+      plot.className = "chart";
+      plot.id = `viz-${i}`;
+      cell.append(cap, plot);
+      grid.appendChild(cell);
+      if (window.Plotly && ch.plotly) {
+        const figure = themedFigure(ch.plotly);
+        figure.layout.title = undefined;
+        window.Plotly.newPlot(plot, figure.data, figure.layout, { displayModeBar: false, responsive: true });
+      }
+    });
+    vizCard.appendChild(grid);
   }
-  doc.appendChild(s2);
+  doc.appendChild(vizCard);
 
-  const s4 = section("İnceleme planı", "wide");
-  const plan = report.plan_readable || [];
-  if (plan.length) s4.appendChild(list(plan));
-  else s4.appendChild(para((report.investigation_plan || []).join(" → ") || "—"));
-  doc.appendChild(s4);
+  const findCard = card("Bulgular");
+  if (!findings.length) {
+    findCard.appendChild(para("Yayımlanmış bulgu yok."));
+  } else {
+    const ol = document.createElement("ol");
+    ol.className = "headline-findings";
+    for (const f of findings) {
+      const li = document.createElement("li");
+      li.textContent = f.text || "";
+      ol.appendChild(li);
+    }
+    findCard.appendChild(ol);
+  }
+  doc.appendChild(findCard);
 
-  const s6 = section("Yayımlanan iddialar", "wide");
-  for (const f of published) {
+  const nextCard = card("Sonraki sorular");
+  if (!next.length) {
+    nextCard.appendChild(para("Bu brifingden sonra ayrı bir dilim sormak yeterli."));
+  } else {
     const box = document.createElement("div");
-    box.className = "finding";
-    box.appendChild(para(f.headline || f.text || ""));
-    const chips = document.createElement("div");
-    chips.className = "chips";
-    if (f.reviewer_decision) chips.appendChild(chip(`reviewer ${f.reviewer_decision}`));
-    for (const id of f.evidence_ids || []) chips.appendChild(chip(id));
-    box.appendChild(chips);
-    s6.appendChild(box);
-  }
-  if (!published.length) s6.appendChild(para("Yayımlanmış iddia yok."));
-  doc.appendChild(s6);
-
-  const s7 = section("Kanıt tablosu", "wide");
-  const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th>id</th><th>işlem</th><th>güç</th></tr></thead>";
-  const tb = document.createElement("tbody");
-  for (const e of evidence) {
-    const tr = document.createElement("tr");
-    for (const c of [e.evidence_id, e.operation_label || e.operation, e.strength]) {
-      const td = document.createElement("td");
-      td.textContent = c || "";
-      tr.appendChild(td);
+    box.className = "next-chips";
+    for (const item of next) {
+      const a = document.createElement("a");
+      a.href = "/chat";
+      a.textContent = item;
+      box.appendChild(a);
     }
-    tb.appendChild(tr);
+    nextCard.appendChild(box);
   }
-  table.appendChild(tb);
-  const tableWrap = document.createElement("div");
-  tableWrap.className = "table-wrap";
-  tableWrap.appendChild(table);
-  s7.appendChild(tableWrap);
-  doc.appendChild(s7);
+  doc.appendChild(nextCard);
 
-  const s8 = section("Sürücü ayrıştırması");
-  const dec = report.driver_decomposition || {};
-  s8.appendChild(para(dec.primary_driver_label || dec.primary_driver || "Öne çıkan dilim yok."));
-  if (dec.evidence_id) {
-    const p = document.createElement("p");
-    p.className = "meta";
-    p.textContent = dec.evidence_id;
-    s8.appendChild(p);
-  }
-  doc.appendChild(s8);
-
-  const s9 = section("Destekleyici görseller", "wide");
-  doc.appendChild(s9);
-  if (!visualizations.length) s9.appendChild(para("Bu kanıt setinde amaçlı grafik yok."));
-  visualizations.forEach((ch, i) => {
-    const cap = document.createElement("p");
-    cap.className = "meta";
-    cap.textContent = `${ch.title || ch.id} · ${kindLabel(ch.kind)} · ${(ch.evidence_ids || []).join(", ")}`;
-    s9.appendChild(cap);
-    const el = document.createElement("div");
-    el.className = "chart";
-    el.id = `viz-${i}`;
-    s9.appendChild(el);
-    if (window.Plotly && ch.plotly) {
-      const figure = themedFigure(ch.plotly);
-      Plotly.newPlot(el, figure.data, figure.layout, { displayModeBar: false, responsive: true });
+  if (slices.length) {
+    const sliceCard = card("Dilim tablosu", "wide");
+    const intro = para("Pay, toplam değişimin ne kadarının o dilimde görüldüğünü gösterir. En büyük pay tek kaynak demek değildir.");
+    intro.className = "section-note";
+    sliceCard.appendChild(intro);
+    const wrap = document.createElement("div");
+    wrap.className = "table-wrap";
+    const table = document.createElement("table");
+    table.innerHTML =
+      "<thead><tr><th>Dilim</th><th>Önceki dönem</th><th>Güncel dönem</th><th>Değişim</th><th>Pay</th></tr></thead>";
+    const tb = document.createElement("tbody");
+    for (const row of slices) {
+      const tr = document.createElement("tr");
+      const cells = [
+        row.label,
+        fmtNum(row.previous),
+        fmtNum(row.current),
+        fmtNum(row.change),
+        row.share_pct == null ? "—" : fmtPct(row.share_pct, false),
+      ];
+      cells.forEach((c, idx) => {
+        const td = document.createElement("td");
+        td.textContent = c;
+        if (idx === 3) td.className = toneClass(row.change);
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
     }
-  });
-
-  const s10 = section("İstatistiksel sonuçlar");
-  const stats = report.statistical_results || [];
-  if (!stats.length) s10.appendChild(para("Bu çalışmada ilişki testi yok."));
-  for (const st of stats) {
-    s10.appendChild(para(`r=${st.r} · p=${st.p_value} · n=${st.n} · ilişki, nedensellik değil (${st.evidence_id})`));
+    table.appendChild(tb);
+    wrap.appendChild(table);
+    sliceCard.appendChild(wrap);
+    doc.appendChild(sliceCard);
   }
-  doc.appendChild(s10);
 
-  const s11 = section("Reviewer kararları");
-  const revs = report.reviewer_decisions || [];
-  if (!revs.length) s11.appendChild(para("Reviewer satırı yok."));
-  for (const v of revs) {
-    const decision = v.decision === "accept" ? "kabul" : v.decision === "reject" ? "red" : v.decision;
-    s11.appendChild(para(`${v.claim_id}: ${decision}${v.reason ? " — " + v.reason : ""}`));
+  const cave = card("Bu raporun söylemediği şey", "wide");
+  const ul = document.createElement("ul");
+  ul.className = "caveats";
+  for (const note of limits) {
+    const li = document.createElement("li");
+    li.textContent = note;
+    ul.appendChild(li);
   }
-  doc.appendChild(s11);
+  cave.appendChild(ul);
+  doc.appendChild(cave);
 
-  const s12 = section("Sınırlamalar");
-  s12.appendChild(list(report.limitations));
-  doc.appendChild(s12);
+  const method = document.createElement("details");
+  method.className = "appendix";
+  const sum = document.createElement("summary");
+  sum.textContent = "Nasıl bakıldı";
+  method.appendChild(sum);
+  const plan = report.plan_readable || [];
+  if (plan.length) {
+    const ol = document.createElement("ol");
+    for (const step of plan) {
+      const li = document.createElement("li");
+      li.textContent = step;
+      ol.appendChild(li);
+    }
+    method.appendChild(ol);
+  } else {
+    method.appendChild(para("Bu incelemede kayıtlı adım listesi yok."));
+  }
+  const nEv = (report.evidence || []).length;
+  method.appendChild(para(`${nEv} kanıt kaydı kullanıldı. Ham kimlikler sohbette dökülmez.`));
+  doc.appendChild(method);
 
-  const s13 = section("Önerilen sonraki incelemeler");
-  s13.appendChild(list(report.recommended_next_investigations));
-  doc.appendChild(s13);
-
-  $("banner").textContent = `run ${run.id} · ${report.decision_label || run.decision} · grafikler ${visualizations.length}`;
+  $("banner").textContent = kpis.verdict || report.decision_label || "Rapor hazır";
+  $("banner").classList.add("ready");
   doc.classList.remove("hidden");
 }
 
 async function main() {
   const rid = new URLSearchParams(location.search).get("run");
-  if (!rid) return;
+  if (!rid) {
+    $("banner").textContent = "Açık bir inceleme yok. Sohbette bir soru sorun, sonra raporu açın.";
+    return;
+  }
   const res = await fetch(`/runs/${rid}`);
   if (!res.ok) {
-    $("banner").textContent = "Run bulunamadı.";
+    $("banner").textContent = "Bu inceleme bulunamadı.";
     return;
   }
   const run = await res.json();

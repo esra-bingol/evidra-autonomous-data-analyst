@@ -36,7 +36,10 @@ CAPABILITY_ANSWERS = {
     ),
 }
 
-CAUSAL_LIMIT = "Mevcut veriler ilişkiyi gösteriyor ancak nedeni kesin olarak belirlemiyor."
+CAUSAL_LIMIT = (
+    "Bu tablo neyin birlikte değiştiğini gösterir, kök nedeni kanıtlamaz; "
+    "kesin nedeni söylemek için fiyat, kampanya veya stok gibi dış bilgi gerekir."
+)
 
 _STEPS = re.compile(r"(ara[şs]t[ıi]rma ad[ıi]m|research step|ad[ıi]mlar[ıi]|plan[ıi]? g[öo]ster)", re.I)
 _REPORT = re.compile(r"(detayl[ıi] rapor|detailed report|investigation report)", re.I)

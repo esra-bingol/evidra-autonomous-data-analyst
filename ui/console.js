@@ -29,6 +29,14 @@ const STOP_PLAIN = {
   complete: "inceleme tamamlandı",
 };
 
+const CHART_PLAIN = {
+  trend: "Dönemler arası değişim",
+  contribution: "Hangi dilim değişime katkı verdi",
+  segment_comparison: "Dilim karşılaştırması",
+  metric_comparison: "Hacim ve sepet tutarı",
+  distribution: "Sıra dışı dönemler",
+};
+
 const $ = (id) => document.getElementById(id);
 
 const state = { datasetId: null, running: false };
@@ -188,6 +196,53 @@ async function registerFile(file) {
   syncRunEnabled();
 }
 
+function fmtPct(n, withSign = true) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  const value = Number(n);
+  let text = Math.abs(value).toFixed(2).replace(/\.?0+$/, "").replace(".", ",");
+  if (!text) text = "0";
+  if (!withSign) return `%${text}`;
+  if (value < 0) return `%${text} azaldı`;
+  if (value > 0) return `%${text} arttı`;
+  return "%0 değişmedi";
+}
+
+function fmtNum(n) {
+  if (n == null || Number.isNaN(Number(n))) return "—";
+  const value = Number(n);
+  const abs = Math.abs(value);
+  const text = abs.toLocaleString("tr-TR", { maximumFractionDigits: abs >= 100 ? 1 : 2 });
+  return value < 0 ? `−${text}` : text;
+}
+
+function toneClass(n) {
+  if (n == null) return "";
+  if (n < 0) return "down";
+  if (n > 0) return "up";
+  return "";
+}
+
+function kpiCard(label, value, hint, tone) {
+  const el = document.createElement("div");
+  el.className = `kpi ${tone || ""}`.trim();
+  const cap = document.createElement("span");
+  cap.textContent = label;
+  const strong = document.createElement("strong");
+  strong.textContent = value;
+  el.append(cap, strong);
+  if (hint) {
+    const small = document.createElement("small");
+    small.textContent = hint;
+    el.appendChild(small);
+  }
+  return el;
+}
+
+function periodHint(kpis) {
+  if (!kpis?.previous_period || !kpis?.current_period) return "";
+  return `${kpis.previous_period} → ${kpis.current_period}`;
+}
+
 function strengthsFor(claim, evidence) {
   const byId = Object.fromEntries((evidence || []).map((e) => [e.evidence_id, e]));
   const vals = (claim.evidence_ids || []).map((id) => byId[id]?.strength).filter(Boolean);
@@ -198,32 +253,30 @@ function renderPlan(run) {
   $("plan-empty").classList.add("hidden");
   $("plan-loading").classList.add("hidden");
   const traces = run.traces || [];
-  const table = $("plan-table");
-  const tb = table.querySelector("tbody");
+  const tb = $("plan-table").querySelector("tbody");
   tb.replaceChildren();
-  if (!traces.length) {
-    table.classList.add("hidden");
-    $("plan-empty").classList.remove("hidden");
-  } else {
-    table.classList.remove("hidden");
-    for (const t of traces) {
-      const tr = document.createElement("tr");
-      const cells = [t.tool, t.ok ? "ok" : "hata", String(t.duration_ms ?? ""), t.summary || t.error || ""];
-      for (const c of cells) {
-        const td = document.createElement("td");
-        td.textContent = c;
-        tr.appendChild(td);
-      }
-      tb.appendChild(tr);
+  for (const t of traces) {
+    const tr = document.createElement("tr");
+    const cells = [t.tool, t.ok ? "tamam" : "hata", `${t.duration_ms ?? "—"} ms`, t.summary || t.error || ""];
+    for (const c of cells) {
+      const td = document.createElement("td");
+      td.textContent = c;
+      tr.appendChild(td);
     }
+    tb.appendChild(tr);
   }
+  $("plan-trace").classList.toggle("hidden", !traces.length);
+
   const steps = $("plan-steps");
-  if (run.plan?.length) {
-    steps.classList.remove("hidden");
-    steps.textContent = (run.plan || []).join(" → ");
-  } else {
-    steps.classList.add("hidden");
+  steps.replaceChildren();
+  const readable = run.investigation_report?.plan_readable || [];
+  for (const step of readable) {
+    const li = document.createElement("li");
+    li.textContent = step;
+    steps.appendChild(li);
   }
+  steps.classList.toggle("hidden", !readable.length);
+  if (!readable.length && !traces.length) $("plan-empty").classList.remove("hidden");
 }
 
 function renderFindings(run) {
@@ -253,13 +306,73 @@ function renderFindings(run) {
     );
   }
 
+  const summary = $("summary-text");
+  summary.textContent = report.executive_summary || "";
+  summary.classList.toggle("hidden", !report.executive_summary);
+
+  const kpiRow = $("kpi-row");
+  kpiRow.replaceChildren();
+  const kpis = report.kpis;
+  if (kpis) {
+    const noun = kpis.metric_noun || "Metrik";
+    kpiRow.append(
+      kpiCard(`${noun} değişimi`, fmtPct(kpis.change_pct), periodHint(kpis), toneClass(kpis.change_pct)),
+      kpiCard("Sipariş sayısı", fmtPct(kpis.volume_change_pct), "Adet", toneClass(kpis.volume_change_pct)),
+      kpiCard("Ortalama sepet", fmtPct(kpis.aov_change_pct), "Sipariş başına tutar", toneClass(kpis.aov_change_pct)),
+      kpiCard("Nerede yoğunlaştı", kpis.concentration || "—", kpis.n_rows ? `${kpis.n_rows} satır incelendi` : ""),
+    );
+  }
+  kpiRow.classList.toggle("hidden", !kpis);
+
+  const findList = $("findings-list");
+  findList.replaceChildren();
+  for (const item of report.headline_findings || []) {
+    const li = document.createElement("li");
+    li.textContent = item.text;
+    findList.appendChild(li);
+  }
+  findList.classList.toggle("hidden", !(report.headline_findings || []).length);
+
+  const sliceTable = $("slice-table");
+  const sliceBody = sliceTable.querySelector("tbody");
+  sliceBody.replaceChildren();
+  const slices = report.slice_table || [];
+  for (const row of slices) {
+    const tr = document.createElement("tr");
+    const cells = [
+      row.label,
+      fmtNum(row.previous),
+      fmtNum(row.current),
+      fmtNum(row.change),
+      row.share_pct == null ? "—" : fmtPct(row.share_pct, false),
+    ];
+    for (const c of cells) {
+      const td = document.createElement("td");
+      td.textContent = c;
+      tr.appendChild(td);
+    }
+    sliceBody.appendChild(tr);
+  }
+  sliceTable.classList.toggle("hidden", !slices.length);
+
+  const caveats = $("caveats");
+  caveats.replaceChildren();
+  for (const note of report.limitations || []) {
+    const li = document.createElement("li");
+    li.textContent = note;
+    caveats.appendChild(li);
+  }
+  caveats.classList.toggle("hidden", !(report.limitations || []).length);
+
+  $("tech").classList.remove("hidden");
+
   const revBox = $("reviews");
   if (revBox) {
     revBox.replaceChildren();
     for (const rev of run.reviews || []) {
       const p = document.createElement("p");
       p.className = "mono";
-      p.textContent = `review: ${rev.decision} · ${rev.reason || ""}`;
+      p.textContent = `denetim: ${rev.decision} · ${rev.reason || ""}`;
       revBox.appendChild(p);
     }
   }
@@ -289,42 +402,36 @@ function renderFindings(run) {
     claimsBox.appendChild(div);
   }
 
-  const evTable = $("evidence-table");
-  const evBody = evTable.querySelector("tbody");
+  const evBody = $("evidence-table").querySelector("tbody");
   evBody.replaceChildren();
-  const rows = run.evidence || [];
-  if (!rows.length) {
-    evTable.classList.add("hidden");
-  } else {
-    evTable.classList.remove("hidden");
-    for (const e of rows) {
-      const tr = document.createElement("tr");
-      const val = typeof e.value === "object" ? JSON.stringify(e.value) : String(e.value ?? "");
-      for (const c of [e.evidence_id, e.operation, e.strength || "", val.slice(0, 180)]) {
-        const td = document.createElement("td");
-        td.textContent = c;
-        tr.appendChild(td);
-      }
-      evBody.appendChild(tr);
+  for (const e of run.evidence || []) {
+    const tr = document.createElement("tr");
+    const val = typeof e.value === "object" ? JSON.stringify(e.value) : String(e.value ?? "");
+    for (const c of [e.evidence_id, e.operation, e.strength || "", val.slice(0, 180)]) {
+      const td = document.createElement("td");
+      td.textContent = c;
+      tr.appendChild(td);
     }
+    evBody.appendChild(tr);
   }
 
   const charts = $("charts");
   charts.replaceChildren();
-  const viz = (run.investigation_report?.visualizations || run.charts || []);
+  const viz = report.visualizations || run.charts || [];
   viz.forEach((ch, i) => {
     const wrap = document.createElement("div");
+    wrap.className = "chart-cell";
+    const cap = document.createElement("p");
+    cap.className = "chart-cap";
+    cap.textContent = CHART_PLAIN[ch.purpose] || ch.title || "Grafik";
     const el = document.createElement("div");
     el.className = "chart";
     el.id = `chart-${i}`;
-    wrap.appendChild(el);
-    const cap = document.createElement("p");
-    cap.className = "chart-cap";
-    cap.textContent = `${ch.kind} · evidence_ids: ${(ch.evidence_ids || []).join(", ")}`;
-    wrap.appendChild(cap);
+    wrap.append(cap, el);
     charts.appendChild(wrap);
     if (window.Plotly && ch.plotly) {
       const fig = themedFigure(ch.plotly);
+      fig.layout.title = undefined;
       window.Plotly.newPlot(el, fig.data, fig.layout, { displayModeBar: false, responsive: true });
     }
   });
@@ -376,7 +483,7 @@ async function loadHistory() {
     return;
   }
   if (empty) empty.classList.add("hidden");
-  for (const run of runs.slice(0, 12)) {
+  for (const run of runs.slice(0, 6)) {
     const li = document.createElement("li");
     const a = document.createElement("a");
     a.href = `/report?run=${run.id || run.run_id}`;

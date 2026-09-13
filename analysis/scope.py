@@ -67,7 +67,7 @@ def _column(df: pd.DataFrame, name: str) -> str | None:
 def scope_lead(scope: dict[str, str]) -> str:
     values = [str(v) for v in scope.values() if v]
     if not values:
-        return "Bu dilimi ayrı bir hipotez olarak inceliyorum."
+        return "Bu dilimi tek başına inceledim."
     if len(values) == 1:
-        return f"{values[0]}'i ayrı bir hipotez olarak inceliyorum."
-    return f"{values[0]} bölgesindeki {values[1]} dilimini ayrı bir hipotez olarak inceliyorum."
+        return f"Sadece {values[0]} dilimine baktım."
+    return f"Sadece {values[0]} bölgesindeki {values[1]} dilimine baktım."

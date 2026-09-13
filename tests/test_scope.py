@@ -39,7 +39,7 @@ def test_apply_scope_filters_rows():
 
 def test_scope_lead_mentions_slice():
     assert "West" in scope_lead({"region": "West"})
-    assert "hipotez" in scope_lead({"region": "West"})
+    assert "Sadece" in scope_lead({"region": "West"})
 
 
 def test_graph_scope_does_not_use_other_regions():

@@ -15,7 +15,7 @@ FALLBACK = (
     "Bu incelemeden güvenilir bir sonuç çıkaramıyorum. "
     "Mevcut kanıtlar bu soruyu yeterince desteklemiyor."
 )
-NO_CONCENTRATION = "Tek bir bölge veya kategoride toplanmış bir değişim görünmüyor."
+NO_CONCENTRATION = "Değişimin tek bir dilimde toplandığına dair bir işaret yok."
 ABSTAIN_NO_SIGNAL = (
     "Bu soruyu mevcut tabloda güvenilir biçimde test edebilecek bir sinyal yok. "
     "Uydurma açıklama üretilmedi."
@@ -81,12 +81,29 @@ def compose_scoped(run: dict[str, Any], scope: dict[str, str]) -> ResponseContra
 def _causal_limit_contract(run: dict[str, Any]) -> ResponseContract:
     refs = _evidence_ids(run, {"compare_periods", "segment_by", "association_test"})
     return ResponseContract(
-        answer=CAUSAL_LIMIT,
+        answer=_causal_answer(run),
         key_findings=[CAUSAL_LIMIT],
         evidence_refs=_uniq(refs),
         limitations=[CAUSAL_LIMIT],
         suggested_followups=["Detaylı raporu göster."],
     )
+
+
+def _causal_answer(run: dict[str, Any]) -> str:
+    """Say what the evidence does show, then where the data stops."""
+    parts: list[str] = []
+    change = _change_pct(run)
+    if change is not None:
+        parts.append(_change_line(change, run))
+    driver = run.get("primary_driver")
+    if run.get("decision") == "primary_driver" and driver:
+        parts.append(f"Hareket en çok {_driver_phrase(str(driver))} diliminde toplanıyor.")
+    vol = _volume_value(run)
+    volume, aov = vol.get("volume_change_pct"), vol.get("aov_change_pct")
+    if volume is not None and aov is not None:
+        parts.append(_reading(float(volume), float(aov)))
+    parts.append(CAUSAL_LIMIT)
+    return " ".join(parts)
 
 
 def _ranking_contract(run: dict[str, Any], message: str) -> ResponseContract:
@@ -104,10 +121,12 @@ def _ranking_contract(run: dict[str, Any], message: str) -> ResponseContract:
         lead = f"Mevcut incelemede öne çıkan dilim {_driver_phrase(label)}."
     parts = [lead]
     findings = [lead]
+    movement = _row_movement(row)
+    if movement:
+        parts.append(movement)
     if share_pct is not None:
         parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)}'ini oluşturuyor.")
         findings.append(f"Katkı payı %{_fmt(share_pct)}.")
-    parts.append(CAUSAL_LIMIT)
     return ResponseContract(
         answer=" ".join(parts),
         key_findings=findings,
@@ -123,12 +142,14 @@ def _slice_contract(run: dict[str, Any], labels: list[str]) -> ResponseContract:
         return compose_response(run)
     loc = _driver_phrase(_row_label(row))
     share_pct = _share_as_percent(row.get("share_of_change"))
-    parts = [f"Mevcut kanıtlara göre {loc} diliminde en güçlü desteklenen sinyal duruyor."]
+    parts = [f"{_cap(loc)} dilimine bakalım."]
     findings = [f"Odak: {loc}."]
+    movement = _row_movement(row)
+    if movement:
+        parts.append(movement)
     if share_pct is not None:
         parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)}'ini oluşturuyor.")
         findings.append(f"Katkı payı %{_fmt(share_pct)}.")
-    parts.append(CAUSAL_LIMIT)
     return ResponseContract(
         answer=" ".join(parts),
         key_findings=findings,
@@ -136,6 +157,15 @@ def _slice_contract(run: dict[str, Any], labels: list[str]) -> ResponseContract:
         limitations=[CAUSAL_LIMIT],
         suggested_followups=["Detaylı raporu göster."],
     )
+
+
+def _row_movement(row: dict[str, Any]) -> str | None:
+    prev, curr = row.get("previous"), row.get("current")
+    if prev is None or curr is None:
+        return None
+    prev_f, curr_f = float(prev), float(curr)
+    verb = "azaldı" if curr_f < prev_f else "arttı" if curr_f > prev_f else "değişmedi"
+    return f"Bu dilimde toplam {_amount(prev_f)} değerinden {_amount(curr_f)} değerine {verb}."
 
 
 def _ranking_field(message: str) -> str | None:
@@ -253,55 +283,64 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
         refs.extend(_evidence_ids(run, {"compare_periods", "segment_by", "decompose_volume_value"}))
     elif decision == "primary_driver" and driver:
         if change is not None:
-            parts.append(_change_sentence(change, run))
+            parts.append(_change_line(change, run))
             findings.append(_change_sentence(change, run))
             refs.extend(_evidence_ids(run, {"compare_periods"}))
         loc = _driver_phrase(str(driver))
         share_pct = _share_as_percent(share)
-        parts.append(f"Düşüşün en güçlü desteklenen sinyali {loc} segmentinden geliyor.")
+        if share_pct is not None:
+            parts.append(
+                f"Değişim en çok {loc} diliminde görülüyor; "
+                f"toplam değişimin %{_fmt(share_pct)} kadarı bu dilimden geliyor."
+            )
+            findings.append(f"Katkı payı %{_fmt(share_pct)}.")
+        else:
+            parts.append(f"Değişim en çok {loc} diliminde görülüyor.")
         findings.append(f"Öne çıkan dilim: {loc}.")
         refs.extend(_evidence_ids(run, {"segment_by"}))
-        extra: list[str] = []
-        if share_pct is not None:
-            extra.append(f"bu dilim toplam değişimin %{_fmt(share_pct)}'ini oluşturuyor")
-            findings.append(f"Katkı payı %{_fmt(share_pct)}.")
         aov = vol.get("aov_change_pct")
         volume = vol.get("volume_change_pct")
-        if aov is not None:
-            extra.append(_aov_clause(float(aov)))
-            refs.extend(_evidence_ids(run, {"decompose_volume_value"}))
-        if extra:
-            parts.append(_cap(" ve ".join(extra) + "."))
-        if _volume_not_aov(change, volume if volume is None else float(volume), aov if aov is None else float(aov)):
+        if aov is not None and volume is not None:
             parts.append(
-                "Bu nedenle mevcut verideki ana sinyal sepet büyüklüğündeki düşüşten çok "
-                "satış hacmindeki daralmayla ilişkili görünüyor."
+                f"Sipariş sayısı {_signed_pct(float(volume))}, "
+                f"ortalama sepet tutarı (AOV) {_signed_pct(float(aov))}."
             )
-            findings.append("Sinyal: hacim daralması, sepet küçülmesi değil.")
+            parts.append(_reading(float(volume), float(aov)))
+            findings.append(_reading(float(volume), float(aov)))
+            refs.extend(_evidence_ids(run, {"decompose_volume_value"}))
+        elif aov is not None:
+            parts.append(_cap(_aov_clause(float(aov)) + "."))
+            refs.extend(_evidence_ids(run, {"decompose_volume_value"}))
     elif decision == "value_not_volume":
         if change is not None:
-            parts.append(_change_sentence(change, run))
+            parts.append(_change_line(change, run))
             findings.append(_change_sentence(change, run))
         aov = vol.get("aov_change_pct")
         volume = vol.get("volume_change_pct")
         parts.append(
-            "Bulgu sipariş hacminden çok ortalama sepet tutarı (AOV) ile ilişkili: "
-            f"AOV {_signed_pct(None if aov is None else float(aov))}, "
-            f"sipariş hacmi {_signed_pct(None if volume is None else float(volume))}."
+            f"Sipariş sayısı {_signed_pct(None if volume is None else float(volume))}, "
+            f"ortalama sepet tutarı (AOV) {_signed_pct(None if aov is None else float(aov))}."
         )
-        findings.append("Yorum: AOV, sipariş hacmi değil.")
+        if aov is not None and volume is not None:
+            parts.append(_reading(float(volume), float(aov)))
+            findings.append(_reading(float(volume), float(aov)))
         refs.extend(_evidence_ids(run, {"decompose_volume_value", "compare_periods"}))
     elif decision == "data_artefact":
         if change is not None:
-            parts.append(_change_sentence(change, run))
+            parts.append(_change_line(change, run))
         parts.append(
-            "Görünen değişim eksik veya kesilmiş bir güncel dönemle birlikte görülüyor; "
-            "bunu veri kalitesi işareti olarak okumak gerekir."
+            "Bu değişim, güncel dönemin eksik görünmesiyle birlikte geliyor: "
+            "önce veri kapsamını doğrulamak gerekir."
         )
-        findings.append("Kalite: kesilmiş güncel pencere.")
+        findings.append("Kalite: güncel dönem penceresi eksik.")
         refs.extend(_evidence_ids(run, {"current_coverage", "compare_periods"}))
     elif decision == "ranking" and driver:
-        parts.append(f"Mevcut karşılaştırmada öne çıkan dilim {_driver_phrase(str(driver))}.")
+        loc = _driver_phrase(str(driver))
+        amount = _slice_amount(run, str(driver))
+        if amount:
+            parts.append(f"Bu karşılaştırmada öne çıkan dilim {loc} ({amount}).")
+        else:
+            parts.append(f"Bu karşılaştırmada öne çıkan dilim {loc}.")
         findings.append(f"Sıralama: {driver}.")
         refs.extend(_evidence_ids(run, {"segment_by"}))
     elif decision == "association":
@@ -324,10 +363,6 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
         refs.extend(_claim_evidence_ids(accepted))
 
     limitations = _limitations_tr(run, decision)
-    if limitations and decision != "abstain":
-        closing = _pick_limitation(limitations)
-        if closing and not _already_said(closing, parts):
-            parts.append(closing)
     answer = _join_parts(parts) or FALLBACK
     return ResponseContract(
         answer=answer,
@@ -463,6 +498,8 @@ def _numeric_pool(run: dict[str, Any]) -> list[Any]:
                 extras.append(round(n * 100.0, 2))
     for claim in run.get("claims") or []:
         values.append(claim.get("text"))
+    for ev in run.get("evidence") or []:
+        values.append(ev.get("period"))
     values.append(extras)
     return values
 
@@ -489,18 +526,6 @@ def _limitations_tr(run: dict[str, Any], decision: str) -> list[str]:
         if (ev.get("value") or {}).get("truncated_current_period"):
             notes.append("Güncel dönem penceresi eksik olabilir.")
     return _uniq(notes)[:5]
-
-
-def _pick_limitation(notes: list[str]) -> str:
-    for n in notes:
-        if "nedeni kesin" in n or "ilişki dilindedir" in n:
-            return n
-    return notes[-1]
-
-
-def _already_said(text: str, parts: list[str]) -> bool:
-    blob = " ".join(parts)
-    return text in blob
 
 
 def _join_parts(parts: list[str]) -> str:
@@ -539,34 +564,49 @@ def abstain_explanation(run: dict[str, Any] | None = None) -> str:
     change = _change_pct(run)
     if change is None:
         return ABSTAIN_NO_SIGNAL
-    parts = [_change_sentence(change, run)]
+    parts = [_change_line(change, run)]
     if _has_segment_evidence(run):
-        if change < 0:
-            parts.append(
-                "Bölge ve kategori dilimleri karşılaştırıldı; azalış tek bir yerde toplanmıyor, "
-                "birkaç dilime yayılıyor."
-            )
-        elif change > 0:
-            parts.append(
-                "Bölge ve kategori dilimleri karşılaştırıldı; artış tek bir yerde toplanmıyor, "
-                "birkaç dilime yayılıyor."
-            )
-        else:
-            parts.append("Dilim karşılaştırmasında da öne çıkan bir yoğunlaşma yok.")
-        parts.append("Bu yüzden tek bir kaynak işaretlenmedi.")
+        word = "azalış" if change < 0 else "artış" if change > 0 else "hareket"
+        parts.append(
+            f"{_cap(_dim_phrase(run))} kırılımları tek tek karşılaştırıldı; {word} tek bir "
+            "dilimde toplanmıyor, birçok dilime dağılmış durumda."
+        )
         vol = _volume_value(run)
         volume = vol.get("volume_change_pct")
         aov = vol.get("aov_change_pct")
         if volume is not None and aov is not None:
             parts.append(
-                f"Sipariş hacmi {_signed_pct(float(volume))}, "
+                f"Sipariş sayısı {_signed_pct(float(volume))}, "
                 f"ortalama sepet tutarı {_signed_pct(float(aov))}."
             )
-        parts.append("Hangi bölge veya kategorinin daha olumsuz göründüğünü ayrıca sorabilirsiniz.")
+        parts.append(
+            "Tek bir kaynağı işaret edecek kadar güçlü bir yoğunlaşma çıkmadığı için "
+            "tek bir dilim işaretlenmedi. Belirli bir dilimi sorarsanız onu ayrı "
+            "inceleyebilirim."
+        )
     else:
         parts.append(NO_CONCENTRATION)
-        parts.append("Bu yüzden tek bir kaynak işaretlenmedi.")
+        parts.append(
+            "Değişimin nerede toplandığını test edecek bir kırılım çıkmadığı için "
+            "tek bir kaynak işaretlenmedi."
+        )
     return " ".join(parts)
+
+
+def _dim_phrase(run: dict[str, Any] | None) -> str:
+    dims: list[str] = []
+    for ev in (run or {}).get("evidence") or []:
+        if ev.get("operation") != "segment_by":
+            continue
+        for dim in (ev.get("filters") or {}).get("dimensions") or []:
+            name = str(dim).strip()
+            if name and name not in dims:
+                dims.append(name)
+    if not dims:
+        return "mevcut"
+    if len(dims) == 1:
+        return dims[0]
+    return " ve ".join([", ".join(dims[:-1]), dims[-1]])
 
 
 def _abstain_lead(change: float | None, run: dict[str, Any] | None = None) -> str:
@@ -586,6 +626,9 @@ def _metric_noun(run: dict[str, Any] | None) -> str:
 
 def _change_sentence(change: float, run: dict[str, Any] | None = None) -> str:
     noun = _metric_noun(run)
+    if abs(change) < 1:
+        direction = "azaldı" if change < 0 else "arttı"
+        return f"{noun} bu dönemde pratikte değişmedi (%{_fmt(abs(change))} {direction})."
     if change < 0:
         return f"{noun} bu dönemde %{_fmt(abs(change))} azaldı."
     if change > 0:
@@ -601,12 +644,57 @@ def _aov_clause(aov: float) -> str:
     return "ortalama sepet tutarı durağan"
 
 
-def _volume_not_aov(change: float | None, volume: float | None, aov: float | None) -> bool:
-    if change is None or volume is None or aov is None:
-        return False
-    if change >= 0:
-        return False
-    return abs(volume) > abs(aov) and volume < 0
+def _reading(volume: float, aov: float) -> str:
+    """One plain sentence saying which of basket size or order count moved."""
+    if abs(aov) >= abs(volume) * 1.5:
+        return f"Yani sipariş sayısı değil, sipariş başına tutar {'küçülmüş' if aov < 0 else 'büyümüş'}."
+    if abs(volume) >= abs(aov) * 1.5:
+        return f"Yani sepet tutarı değil, sipariş sayısı {'azalmış' if volume < 0 else 'artmış'}."
+    return "Sipariş sayısı ve sepet tutarı birlikte hareket etmiş."
+
+
+def _amount(value: float) -> str:
+    if abs(value) >= 100:
+        return _fmt(round(value))
+    return _fmt(round(value, 2))
+
+
+def _amount_pair(run: dict[str, Any]) -> str | None:
+    for ev in run.get("evidence") or []:
+        if ev.get("operation") != "compare_periods":
+            continue
+        val = ev.get("value") or {}
+        prev, curr = val.get("previous"), val.get("current")
+        if prev is None or curr is None:
+            return None
+        return f"{_amount(float(prev))} → {_amount(float(curr))}"
+    return None
+
+
+def _change_line(change: float, run: dict[str, Any]) -> str:
+    base = _change_sentence(change, run)
+    pair = _amount_pair(run)
+    if not pair:
+        return base
+    if base.endswith(")."):
+        return f"{base[:-2]}; {pair})."
+    return f"{base.rstrip('.')} ({pair})."
+
+
+def _slice_amount(run: dict[str, Any], driver: str) -> str | None:
+    labels = [p.strip() for p in re.split(r"\s*[×x]\s*", driver) if p.strip()]
+    for ev in run.get("evidence") or []:
+        if ev.get("operation") != "segment_by":
+            continue
+        for row in (ev.get("value") or {}).get("rows") or []:
+            blob = " ".join(str(v) for v in row.values())
+            if labels and not all(lab in blob for lab in labels):
+                continue
+            current = row.get("current")
+            if current is None:
+                continue
+            return _amount(float(current))
+    return None
 
 
 def _driver_phrase(label: str) -> str:

@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 from analysis.charts import build_charts
-from analysis.response import abstain_explanation
+from analysis.response import abstain_explanation, compose_response
 
 SECTION_KEYS = (
     "executive_summary",
@@ -38,6 +38,20 @@ PLAN_LABELS = {
     "validate_claims": "İddialar doğrulandı",
     "review_claims": "Reviewer denetimi uygulandı",
     "report": "Rapor üretildi",
+}
+
+STEP_LABELS = {
+    "inspect_dataset": "Tabloyu okudum: kaç satır var, hangi kolonlar hangi rolü taşıyor.",
+    "profile_dataset": "Tarih, tutar ve kırılım kolonlarını işaretledim.",
+    "current_coverage": "Güncel dönemin tam mı yoksa yarım mı olduğunu kontrol ettim.",
+    "compare_periods": "Önceki dönem ile güncel dönemi aynı ölçüyle karşılaştırdım.",
+    "decompose_volume_value": (
+        "Değişimi ikiye ayırdım: sipariş sayısı mı değişti, sipariş başına tutar mı?"
+    ),
+    "detect_anomalies": "Sıra dışı görünen dönemleri işaretledim.",
+    "association_test": "İki ölçünün birlikte hareket edip etmediğini test ettim.",
+    "join_assemble": "İlgili tabloları ortak anahtar üzerinden birleştirdim.",
+    "run_sql": "Soruya karşılık gelen sorguyu tablo üzerinde çalıştırdım.",
 }
 
 DECISION_LABELS = {
@@ -85,7 +99,7 @@ def build_investigation_report(run: dict[str, Any]) -> dict[str, Any]:
         "dataset_overview": _dataset_overview(run, evidence),
         "investigation_question": run.get("question") or "",
         "investigation_plan": list(run.get("plan") or []),
-        "plan_readable": _plan_readable(run.get("plan") or []),
+        "plan_readable": _plan_readable(run),
         "research_trace": _research_trace(run),
         "key_findings": findings,
         "evidence": _evidence_index(evidence),
@@ -95,6 +109,8 @@ def build_investigation_report(run: dict[str, Any]) -> dict[str, Any]:
         "reviewer_decisions": reviews,
         "limitations": _limitations(run, evidence, reviews),
         "recommended_next_investigations": _recommended_next(run),
+        "kpis": _kpis(run, evidence),
+        "slice_table": _slice_table(evidence),
     }
 
 
@@ -117,28 +133,11 @@ def _title(run: dict[str, Any]) -> str:
 
 
 def _executive_summary(run: dict[str, Any]) -> str:
-    decision = run.get("decision") or "abstain"
-    if decision == "abstain":
+    """Same prose the analyst reads in chat, so the two never disagree."""
+    if (run.get("decision") or "abstain") == "abstain":
         text = abstain_explanation(run)
-        if _ENGINE_LEAK.search(text):
-            return "Bu incelemenin yayımlanan sonucu mevcut kanıtlara bağlıdır; motor jargonu rapora yazılmaz."
-        return text
-    change = _change_pct(run)
-    driver = run.get("primary_driver")
-    parts: list[str] = []
-    if change is not None:
-        parts.append(_change_sentence(change, run))
-    if decision == "primary_driver" and driver:
-        parts.append(f"En güçlü desteklenen sinyal {_driver_phrase(str(driver))}.")
-    elif decision == "value_not_volume":
-        parts.append("Bulgu sipariş hacminden çok ortalama sepet tutarı ile ilişkili görünüyor.")
-    elif decision == "data_artefact":
-        parts.append("Görünen değişim eksik bir güncel pencereyle birlikte görülüyor.")
-    elif decision == "ranking" and driver:
-        parts.append(f"Karşılaştırmada öne çıkan dilim {_driver_phrase(str(driver))}.")
-    elif decision == "association":
-        parts.append("Bulgu bir ilişki ifadesidir, nedensellik değil.")
-    text = " ".join(parts)
+    else:
+        text = compose_response(run).answer
     if _ENGINE_LEAK.search(text):
         return "Bu incelemenin yayımlanan sonucu mevcut kanıtlara bağlıdır; motor jargonu rapora yazılmaz."
     return text
@@ -160,17 +159,37 @@ def _headline_findings(run: dict[str, Any], _evidence: list[dict[str, Any]]) -> 
         )
 
     if decision == "primary_driver" and driver:
-        add(f"{driver} — en güçlü desteklenen sinyal", {"segment_by"})
+        top = next((r for r in _slice_table(_evidence) if r.get("label") == driver), None)
+        if top and top.get("share_pct") is not None:
+            add(
+                f"Değişim en çok {driver} diliminde: "
+                f"{_fmt(top.get('previous'))} → {_fmt(top.get('current'))}, "
+                f"toplam değişimin %{_fmt(top.get('share_pct'))} kadarı burada",
+                {"segment_by"},
+            )
+        else:
+            add(f"Değişim en çok {driver} diliminde toplanıyor", {"segment_by"})
         volume = vol.get("volume_change_pct")
         aov = vol.get("aov_change_pct")
-        if volume is not None and float(volume) < 0:
-            add("Satış hacmi daraldı", {"decompose_volume_value"})
-        if aov is not None and float(aov) > 0:
-            add("Ortalama sepet tutarı hafif arttı", {"decompose_volume_value"})
-        elif aov is not None and float(aov) < 0:
-            add("Ortalama sepet tutarı azaldı", {"decompose_volume_value"})
+        if volume is not None and aov is not None:
+            add(
+                f"Sipariş sayısı %{_fmt(abs(float(volume)))} "
+                f"{'azaldı' if float(volume) < 0 else 'arttı' if float(volume) > 0 else 'değişmedi'}, "
+                f"ortalama sepet tutarı %{_fmt(abs(float(aov)))} "
+                f"{'azaldı' if float(aov) < 0 else 'arttı' if float(aov) > 0 else 'değişmedi'}",
+                {"decompose_volume_value"},
+            )
     elif decision == "value_not_volume":
-        add("Değişim sipariş hacminden çok sepet tutarı ile ilişkili", {"decompose_volume_value"})
+        aov = vol.get("aov_change_pct")
+        volume = vol.get("volume_change_pct")
+        if aov is not None and volume is not None:
+            add(
+                f"Sipariş sayısı neredeyse sabit (%{_fmt(abs(float(volume)))}), "
+                f"düşüş sepet tutarında (%{_fmt(abs(float(aov)))})",
+                {"decompose_volume_value"},
+            )
+        else:
+            add("Değişim sipariş hacminden çok sepet tutarı ile ilişkili", {"decompose_volume_value"})
     elif decision == "ranking" and driver:
         add(f"Öne çıkan dilim: {_driver_phrase(str(driver))}", {"segment_by"})
     elif decision == "association":
@@ -182,8 +201,27 @@ def _headline_findings(run: dict[str, Any], _evidence: list[dict[str, Any]]) -> 
     return items[:6]
 
 
-def _plan_readable(plan: list[str]) -> list[str]:
-    return [PLAN_LABELS.get(step, step) for step in plan]
+def _plan_readable(run: dict[str, Any]) -> list[str]:
+    """What was done to the data, in order, not which graph nodes ran."""
+    steps: list[str] = []
+
+    def add(text: str) -> None:
+        if text not in steps:
+            steps.append(text)
+
+    for ev in run.get("evidence") or []:
+        op = ev.get("operation")
+        if op == "segment_by":
+            dims = [str(d) for d in ((ev.get("filters") or {}).get("dimensions") or [])]
+            label = " ve ".join(dims) if dims else "mevcut"
+            add(f"{label} kırılımlarını tek tek tarayıp hangi dilimin ne kadar değiştiğine baktım.")
+        elif op in STEP_LABELS:
+            add(STEP_LABELS[op])
+    if not steps:
+        return [PLAN_LABELS.get(step, step) for step in run.get("plan") or []]
+    if run.get("reviews"):
+        add("Her cümleyi hesaplanan kanıta bağladım; bağlanamayan cümleyi yayımlamadım.")
+    return steps
 
 
 def _change_pct(run: dict[str, Any]) -> float | None:
@@ -348,30 +386,21 @@ def _evidence_index(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 
 def _driver_decomposition(run: dict[str, Any], evidence: list[dict[str, Any]]) -> dict[str, Any]:
-    interaction = None
-    for ev in evidence:
-        if ev.get("operation") != "segment_by":
-            continue
-        dims = ((ev.get("filters") or {}).get("dimensions")) or []
-        rows = ((ev.get("value") or {}).get("rows")) or []
-        if len(dims) >= 2 and rows:
-            interaction = ev
-            break
-    if not interaction:
-        driver = run.get("primary_driver")
+    source = _best_segment(evidence)
+    driver = run.get("primary_driver")
+    if not source:
         return {
             "primary_driver": driver,
             "primary_driver_label": _driver_phrase(str(driver)) if driver else None,
             "rows": [],
             "evidence_id": None,
         }
-    rows = ((interaction.get("value") or {}).get("rows")) or []
+    rows = ((source.get("value") or {}).get("rows")) or []
     ranked = sorted(rows, key=lambda r: abs(float(r.get("share_of_change") or 0)), reverse=True)
-    driver = run.get("primary_driver")
     return {
         "primary_driver": driver,
         "primary_driver_label": _driver_phrase(str(driver)) if driver else None,
-        "evidence_id": interaction.get("evidence_id"),
+        "evidence_id": source.get("evidence_id"),
         "rows": ranked[:12],
     }
 
@@ -396,43 +425,139 @@ def _statistical_results(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]
 
 def _limitations(run: dict[str, Any], evidence: list[dict[str, Any]], reviews: list[dict[str, Any]]) -> list[str]:
     notes = [
-        "Yayımlanan metin ilişki dilindedir; rapor nedensel iddia eklemez.",
-        "Grafikler mevcut kanıt değerlerine bağlıdır; bağımsız sayı kaynağı değillerdir.",
-        "Rapor üreticisi yeni iddia oluşturmaz; yalnızca reviewer’dan geçen iddialar görünür.",
+        "Bu rapor ilişki dilindedir: birlikte görülen değişimleri söyler, nedenini iddia etmez.",
+        "Grafikteki her sayı bu incelemede hesaplanan kanıttan gelir.",
     ]
     if (run.get("decision") or "") == "abstain" or (run.get("stop_reason") or "") == "abstain":
-        notes.append("Tek bir bölge veya kategoride toplanmış bir değişim görünmüyor.")
+        notes.append("Değişim tek bir bölge veya kategoride toplanmadığı için tek kaynak işaretlenmedi.")
     if run.get("stop_reason") == "budget" or run.get("insufficient_kind") == "budget":
         notes.append("Araştırma bütçesi daha güçlü bir sonuca ulaşmadan doldu.")
     if run.get("insufficient_kind") == "multiple_plausible_drivers":
-        notes.append("Birden fazla dilim eşik değerini aşıyor.")
+        notes.append("Birden fazla dilim eşik değerini aşıyor; tek kaynak seçilmedi.")
     cov = _first(evidence, "current_coverage")
     cov_val = (cov.get("value") or {}) if cov else {}
     if cov_val.get("truncated_current_period"):
         last = cov_val.get("current_last_observed")
         notes.append(f"Güncel dönem penceresi eksik olabilir (son gözlem: {last}).")
     if any(v.get("decision") == "reject" for v in reviews):
-        notes.append("En az bir taslak iddia reviewer tarafından reddedildi ve yayımlanmadı.")
+        notes.append("En az bir taslak iddia denetimden geçmedi ve yayımlanmadı.")
     return notes
 
 
 def _recommended_next(run: dict[str, Any]) -> list[str]:
     items: list[str] = []
     driver = run.get("primary_driver")
-    if driver:
-        items.append(f"{_driver_phrase(str(driver))} dilimini ayrı bir hipotez olarak incele.")
+    if driver and str(driver).strip().upper() == "AOV":
+        items.append("Sepet tutarındaki düşüş hangi dilimde yoğunlaşıyor?")
+    elif driver:
+        items.append(f"{_driver_phrase(str(driver))} dilimini tek başına incele.")
     vol = _volume_value(run)
     volume = vol.get("volume_change_pct")
     if volume is not None and float(volume) < 0:
-        items.append("Hacim daralmasının hangi alt dilimde yoğunlaştığını incele.")
+        items.append("Sipariş sayısındaki düşüş hangi dilimde toplanıyor?")
     if run.get("scope"):
-        items.append("Kapsamı genişletip tüm tabloya dön.")
+        items.append("Tüm tabloya geri dön.")
     if (run.get("decision") or "") == "abstain":
         items.append("Hangi bölge öne çıkıyor?")
         items.append("Hangi kategori öne çıkıyor?")
     if not items:
-        items.append("Detaylı raporu ve kanıt listesini gözden geçir.")
+        items.append("Detaylı raporu aç.")
     return items[:6]
+
+
+def _kpis(run: dict[str, Any], evidence: list[dict[str, Any]]) -> dict[str, Any]:
+    change = _change_pct(run)
+    vol = _volume_value(run)
+    cmp = _first(evidence, "compare_periods")
+    period = (cmp or {}).get("period") or {}
+    inspect = _first(evidence, "inspect_dataset")
+    n_rows = ((inspect or {}).get("value") or {}).get("n_rows")
+    decision = run.get("decision") or "abstain"
+    driver = run.get("primary_driver")
+    if decision == "primary_driver" and driver:
+        concentration = _driver_phrase(str(driver))
+    elif decision == "value_not_volume":
+        concentration = "Sepet tutarı, sipariş sayısı değil"
+    elif decision == "ranking" and driver:
+        concentration = _driver_phrase(str(driver))
+    elif decision == "data_artefact":
+        concentration = "Eksik veri penceresi olabilir"
+    elif decision == "association":
+        concentration = "İlişki var; neden değil"
+    else:
+        concentration = "Tek bir dilimde toplanmadı"
+    metric = str(((cmp or {}).get("value") or {}).get("metric") or "").lower()
+    return {
+        "change_pct": change,
+        "volume_change_pct": vol.get("volume_change_pct"),
+        "aov_change_pct": vol.get("aov_change_pct"),
+        "concentration": concentration,
+        "previous_period": _period_label(period.get("previous")),
+        "current_period": _period_label(period.get("current")),
+        "n_rows": n_rows,
+        "metric_noun": "Ücretler" if "fare" in metric else "Satışlar",
+        "verdict": DECISION_LABELS.get(decision, decision),
+    }
+
+
+def _slice_table(evidence: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    source = _best_segment(evidence)
+    if not source:
+        return []
+    dims = list(((source.get("filters") or {}).get("dimensions")) or [])
+    rows = list(((source.get("value") or {}).get("rows")) or [])
+    ranked = sorted(rows, key=lambda r: abs(float(r.get("share_of_change") or r.get("change") or 0)), reverse=True)
+    out: list[dict[str, Any]] = []
+    for row in ranked[:8]:
+        if dims:
+            label = " × ".join(str(row.get(d, "")).strip() for d in dims if row.get(d) not in (None, ""))
+        else:
+            label = " · ".join(
+                str(v)
+                for k, v in row.items()
+                if k not in {"previous", "current", "change", "share_of_change"} and v not in (None, "")
+            )
+        share = row.get("share_of_change")
+        share_pct = None
+        if share is not None:
+            mag = abs(float(share))
+            share_pct = round(mag * 100.0, 2) if mag <= 1.5 else round(mag, 2)
+        out.append(
+            {
+                "label": label or "—",
+                "previous": row.get("previous"),
+                "current": row.get("current"),
+                "change": row.get("change"),
+                "share_pct": share_pct,
+            }
+        )
+    return out
+
+
+def _best_segment(evidence: list[dict[str, Any]]) -> dict[str, Any] | None:
+    two = None
+    one = None
+    for ev in evidence:
+        if ev.get("operation") != "segment_by":
+            continue
+        dims = ((ev.get("filters") or {}).get("dimensions")) or []
+        rows = ((ev.get("value") or {}).get("rows")) or []
+        if not rows:
+            continue
+        if len(dims) >= 2:
+            two = ev
+        elif one is None:
+            one = ev
+    return two or one
+
+
+def _period_label(window: Any) -> str | None:
+    if not isinstance(window, dict):
+        return None
+    start, end = window.get("start"), window.get("end")
+    if start and end and start != end:
+        return f"{start} — {end}"
+    return start or end
 
 
 def _first(evidence: list[dict[str, Any]], operation: str) -> dict[str, Any] | None:

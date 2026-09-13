@@ -154,7 +154,7 @@ def test_west_why_opens_scoped_run_in_same_chat():
     assert msg["run_id"] != first_run
     assert msg.get("parent_run_id") == first_run
     assert (msg.get("scope") or {}).get("region") == "West"
-    assert "ayrı bir hipotez" in msg["text"]
+    assert "Sadece West" in msg["text"]
     assert "west" in msg["text"].lower()
     assert "associated" not in msg["text"].lower()
     hist = client.get(f"/chats/{chat['id']}").json()

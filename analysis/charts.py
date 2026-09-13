@@ -31,7 +31,7 @@ def build_charts(run: dict[str, Any]) -> list[dict[str, Any]]:
             picks.append(_trend_line(run, cmp))
         if decision == "primary_driver" and seg2:
             picks.append(_contribution(run, seg2))
-        elif intent != "ranking" and seg1 and decision not in {"abstain", "association"}:
+        elif intent != "ranking" and seg1 and decision != "association":
             picks.append(_segment_bar(run, seg1))
         if vol and decision in {"primary_driver", "value_not_volume"}:
             picks.append(_volume_aov(run, vol))
@@ -57,7 +57,6 @@ def _trend_line(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | Non
     period = ev.get("period") or {}
     x0 = (period.get("previous") or {}).get("end") or "önceki dönem"
     x1 = (period.get("current") or {}).get("end") or "güncel dönem"
-    metric = val.get("metric") or "metrik"
     fig = go.Figure(
         go.Scatter(
             x=[str(x0), str(x1)],
@@ -69,7 +68,7 @@ def _trend_line(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | Non
         run,
         kind="line",
         purpose="trend",
-        title=f"{metric} eğilimi",
+        title="Dönemler arası değişim",
         evidence_ids=[ev["evidence_id"]],
         fig=fig,
     )
@@ -90,7 +89,7 @@ def _segment_bar(run: dict[str, Any], ev: dict[str, Any]) -> dict[str, Any] | No
         run,
         kind="bar",
         purpose="segment_comparison",
-        title=f"{dim} karşılaştırması",
+        title="Dilim karşılaştırması",
         evidence_ids=[ev["evidence_id"]],
         fig=fig,
     )

@@ -99,8 +99,14 @@ def test_taxi_fixture_is_catalogued(client: TestClient):
     assert body["investigation_report"]["key_findings"]
     page = client.get("/report")
     assert page.status_code == 200
-    assert "Evidra incelemesi" in page.text
+    assert "İnceleme raporu" in page.text
     assert "block-upload" not in page.text
+    report_js = client.get("/static/report.js").text
+    assert "Kanıt tablosu" not in report_js
+    assert "Reviewer kararları" not in report_js
+    assert "Sürücü ayrıştırması" not in report_js
+    assert "Nerede yoğunlaştı" in report_js
+    assert "Dilim tablosu" in report_js
     packed = client.get(f"/runs/{body['id']}/report")
     assert packed.status_code == 200
     assert packed.json()["source"] == "validated_investigation_state"

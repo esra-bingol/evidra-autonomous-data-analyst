@@ -76,12 +76,21 @@ function themedFigure(figure) {
 }
 
 const DECISION_LABELS = {
-  primary_driver: "öne çıkan dilim",
-  value_not_volume: "sepet tutarı",
-  data_artefact: "veri kalitesi",
-  ranking: "sıralama",
-  association: "ilişki",
-  abstain: "belirgin yoğunlaşma yok",
+  primary_driver: "Tek dilimde yoğunlaştı",
+  value_not_volume: "Sepet tutarı, adet değil",
+  data_artefact: "Veri kalitesi işareti",
+  ranking: "Sıralama",
+  association: "İlişki, neden değil",
+  abstain: "Belirgin yoğunlaşma yok",
+};
+
+const DECISION_SHORT = {
+  primary_driver: "Tek dilim",
+  value_not_volume: "Sepet tutarı",
+  data_artefact: "Veri kalitesi",
+  ranking: "Sıralama",
+  association: "İlişki",
+  abstain: "Yoğunlaşma yok",
 };
 
 function startersFor(fid) {
@@ -109,7 +118,7 @@ async function renderRunPreview(runId, reportUrl) {
   if (!res.ok) return;
   const run = await res.json();
   const report = run.investigation_report || {};
-  const findings = report.key_findings || run.claims || [];
+  const findings = report.headline_findings || report.key_findings || run.claims || [];
   const charts = report.visualizations || run.charts || [];
   const evidence = report.evidence || run.evidence || [];
 
@@ -122,7 +131,7 @@ async function renderRunPreview(runId, reportUrl) {
   const metrics = document.createElement("div");
   metrics.className = "metric-grid";
   const metricValues = [
-    ["Sonuç", DECISION_LABELS[run.decision] || run.decision || "—"],
+    ["Sonuç", DECISION_SHORT[run.decision] || run.decision || "—"],
     ["Bulgular", String(findings.length)],
     ["Kanıtlar", String(evidence.length)],
     ["Grafikler", String(charts.length)],

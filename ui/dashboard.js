@@ -59,12 +59,26 @@ function formatDate(value) {
   );
 }
 
-function formatPct(value) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
+function pctText(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return null;
   const n = Number(value);
-  const sign = n > 0 ? "+" : "";
-  const text = Math.abs(n - Math.round(n)) < 1e-9 ? String(Math.round(n)) : n.toFixed(1).replace(".", ",");
-  return `${sign}${text}%`;
+  const text = Math.abs(n).toFixed(2).replace(/\.?0+$/, "").replace(".", ",") || "0";
+  return { n, text };
+}
+
+function formatPct(value) {
+  const parsed = pctText(value);
+  if (!parsed) return "—";
+  if (parsed.n < 0) return `%${parsed.text} azaldı`;
+  if (parsed.n > 0) return `%${parsed.text} arttı`;
+  return "%0 değişmedi";
+}
+
+function shortPct(value) {
+  const parsed = pctText(value);
+  if (!parsed) return "—";
+  if (parsed.n === 0) return "%0";
+  return `${parsed.n < 0 ? "−" : "+"}%${parsed.text}`;
 }
 
 const DECISION_PLAIN = {
@@ -94,6 +108,7 @@ function plainDecision(run) {
 
 function plainDriver(run) {
   const report = run.investigation_report || {};
+  if (report.kpis?.concentration) return report.kpis.concentration;
   const raw = report.driver_decomposition?.primary_driver_label || report.driver_decomposition?.primary_driver;
   if (raw) return raw;
   if ((run.decision || "") === "abstain") return "Tek bir bölge veya kategoride toplanmadı";
@@ -112,17 +127,15 @@ function kpisFrom(run) {
       aov = val.aov_change_pct;
     }
   }
+  const kpis = report.kpis || {};
   return {
     decision: plainDecision(run),
-    change,
+    change: kpis.change_pct ?? change,
     driver: plainDriver(run),
-    volume,
-    aov,
+    volume: kpis.volume_change_pct ?? volume,
+    aov: kpis.aov_change_pct ?? aov,
     question: report.investigation_question || run.question || "",
-    limitation: String((report.limitations || [])[0] || "").replace(
-      "Yoğunlaşmış bir sürücü bu incelemede desteklenmiyor.",
-      "Bu incelemede tek bir bölge veya kategori öne çıkmadı."
-    ),
+    summary: report.executive_summary || "",
   };
 }
 
@@ -201,7 +214,7 @@ function renderMetrics(run) {
   if (kpi.volume == null && kpi.aov == null) {
     $("kpi-volume").textContent = "—";
   } else {
-    $("kpi-volume").textContent = `sipariş ${formatPct(kpi.volume)} · sepet ${formatPct(kpi.aov)}`;
+    $("kpi-volume").textContent = `sipariş ${shortPct(kpi.volume)} · sepet ${shortPct(kpi.aov)}`;
   }
   const note = $("kpi-limitation");
   if (!note) return;
@@ -209,8 +222,7 @@ function renderMetrics(run) {
     note.textContent = "Bu kartlar son sorduğunuz sorunun incelemesinden gelir. Henüz soru yoksa önce verini bağlayıp bir iş sorusu sorun.";
     return;
   }
-  const bits = [kpi.question, kpi.limitation].filter(Boolean);
-  note.textContent = bits.join(" — ");
+  note.textContent = kpi.summary || kpi.question || "";
 }
 
 async function loadDashboard() {

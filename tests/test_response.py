@@ -112,7 +112,8 @@ def test_validator_rejects_causal_wording():
 def test_followup_causal_probe_uses_limit_sentence():
     run = run_investigation(FIXTURES / "clear_driver.csv", "Satış neden değişti?")
     contract = compose_followup(run, "Bunun nedeni ne?")
-    assert contract.answer == CAUSAL_LIMIT
+    assert contract.answer.endswith(CAUSAL_LIMIT)
+    assert "West" in contract.answer
     ok, reasons = validate_response(contract, run)
     assert ok, reasons
 
@@ -137,7 +138,7 @@ def test_limitation_survives_from_report():
     assert run["investigation_report"]["limitations"]
     contract = compose_response(run)
     assert contract.limitations
-    assert any("yoğunlaş" in n or "toplanmış" in n or "desteklenmiyor" in n for n in contract.limitations)
+    assert any("yoğunlaş" in n or "toplan" in n or "desteklenmiyor" in n for n in contract.limitations)
 
 
 def test_taxi_compose_says_fare_not_sales():

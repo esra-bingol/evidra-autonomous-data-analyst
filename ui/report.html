@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Evidra — İnceleme raporu</title>
-    <link rel="stylesheet" href="/static/report.css?v=6" />
+    <link rel="stylesheet" href="/static/report.css?v=9" />
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="/static/report.js?v=7" defer></script>
+    <script src="/static/report.js?v=9" defer></script>
   </head>
   <body>
     <aside class="rail">
@@ -15,12 +15,12 @@
           <img src="/static/evidra-logo.svg" alt="" />
         </span>
         <div>
-          <p class="eyebrow">Data workspace</p>
+          <p class="eyebrow">Veri analisti</p>
           <p class="brand-name">Evidra</p>
         </div>
       </div>
       <nav class="rail-nav" aria-label="Ana navigasyon">
-        <p class="nav-heading">Analysis</p>
+        <p class="nav-heading">Analiz</p>
         <a class="nav-link" href="/dashboard">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
             <path d="M4 4h6v6H4V4Zm10 0h6v10h-6V4ZM4 14h6v6H4v-6Zm10 4h6v2h-6v-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
@@ -39,34 +39,34 @@
           </svg>
           <span>İnceleme konsolu</span>
         </a>
-        <p class="nav-heading nav-heading-spaced">Insights</p>
+        <p class="nav-heading nav-heading-spaced">İçgörüler</p>
         <span class="nav-link active" aria-current="page">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
             <path d="M7 3.5h7l4 4V20H7V3.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" />
             <path d="M14 3.5V8h4M10 12h5M10 15.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
           </svg>
-          <span>Detaylı rapor</span>
+          <span>İnceleme raporu</span>
         </span>
       </nav>
       <div class="rail-note">
-        <strong>Kanıta dayalı rapor</strong>
-        <p>Her bulgu, doğrulanmış kanıt ve araştırma iziyle birlikte sunulur.</p>
+        <strong>Analist brifingi</strong>
+        <p>Önce sonuç ve grafikler. Kanıt kimliği ve motor adımları raporu kalabalıklaştırmaz.</p>
       </div>
     </aside>
 
     <main class="workspace">
       <header class="topbar">
         <div>
-          <p class="eyebrow">İnceleme çıktısı</p>
-          <h1>Evidra incelemesi</h1>
-          <p>Yönetici özeti, numaralı bulgular, kanıt ve sınırlamalar. Chatbot’un uzun hali değil.</p>
+          <p class="eyebrow">Veri analisti raporu</p>
+          <h1>İnceleme raporu</h1>
+          <p>Ne değişti, nerede bakıldı, tek kaynak var mı, sonra ne sorulmalı.</p>
         </div>
         <div class="topbar-actions">
           <a href="/chat">Sohbete dön</a>
-          <a class="primary" href="/console">Yeni inceleme</a>
+          <a class="primary" href="/chat">Yeni soru</a>
         </div>
       </header>
-      <p id="banner" class="banner">Run id bekleniyor (?run=).</p>
+      <p id="banner" class="banner">Rapor yükleniyor…</p>
       <article id="doc" class="doc hidden"></article>
     </main>
   </body>
