@@ -100,6 +100,7 @@ a:focus-visible {
 }
 
 .workspace-switcher {
+  min-width: 0;
   padding: 0.7rem;
   display: flex;
   align-items: center;
@@ -123,6 +124,10 @@ a:focus-visible {
 .workspace-switcher small,
 .workspace-switcher strong {
   display: block;
+}
+
+.workspace-switcher > div {
+  min-width: 0;
 }
 
 .workspace-switcher small {
@@ -471,6 +476,7 @@ a.secondary {
 }
 
 .metrics article {
+  min-width: 0;
   padding: 1rem;
   display: flex;
   align-items: center;
@@ -492,6 +498,7 @@ a.secondary {
   color: var(--muted);
   font-size: 0.82rem;
   line-height: 1.5;
+  max-width: 56rem;
 }
 
 .chart-cap {
@@ -632,8 +639,11 @@ a.secondary {
 }
 
 .recent-item {
+  min-width: 0;
+  max-width: 100%;
   padding: 0.75rem;
   display: block;
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   color: var(--text);
@@ -646,6 +656,7 @@ a.secondary {
 }
 
 .recent-item-header {
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -653,12 +664,16 @@ a.secondary {
 }
 
 .recent-status {
+  max-width: 9rem;
   padding: 0.2rem 0.45rem;
+  overflow: hidden;
   border-radius: 999px;
   background: var(--green-soft);
   color: var(--green);
   font-size: 0.62rem;
   font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recent-item strong {
@@ -671,16 +686,20 @@ a.secondary {
 }
 
 .recent-item small {
+  min-width: 0;
+  overflow: hidden;
   color: var(--muted);
   font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .how-it-works {
   margin-top: 1rem;
   padding: clamp(1.5rem, 4vw, 3rem);
   display: grid;
-  grid-template-columns: minmax(15rem, 0.65fr) minmax(0, 1.35fr);
-  gap: 3rem;
+  grid-template-columns: minmax(16rem, 0.75fr) minmax(0, 1.25fr);
+  gap: 2rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   background: var(--surface);
@@ -695,7 +714,7 @@ a.secondary {
 
 .steps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8rem;
 }
 

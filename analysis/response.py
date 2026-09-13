@@ -40,6 +40,12 @@ class ResponseContract(BaseModel):
 def compose_response(run: dict[str, Any]) -> ResponseContract:
     if run.get("error"):
         return ResponseContract(answer=f"İnceleme çalışmadı: {run['error']}")
+    question = str(run.get("question") or "")
+    if question and is_ranking_question(question):
+        draft = _ranking_contract(run, question)
+        ok, _reasons = validate_response(draft, run)
+        if ok:
+            return draft
     draft = _compose_unchecked(run)
     ok, _reasons = validate_response(draft, run)
     if ok:
@@ -108,12 +114,20 @@ def _causal_answer(run: dict[str, Any]) -> str:
 
 def _ranking_contract(run: dict[str, Any], message: str) -> ResponseContract:
     field = _ranking_field(message)
-    row, eid = _worst_row(run, field)
+    mode = _ranking_mode(message)
+    row, eid = _ranking_row(run, field, mode)
     if not row:
-        return compose_response(run)
-    label = str(row.get(field) or _row_label(row))
+        return _compose_unchecked(run)
+    label = str(_row_value(row, field) or _row_label(row))
     share_pct = _share_as_percent(row.get("share_of_change"))
-    if field == "category":
+    if mode == "top_current":
+        current = _amount(float(row["current"])) if row.get("current") is not None else None
+        noun = "kategori" if field == "category" else "bölge" if field == "region" else "dilim"
+        lead = f"Mevcut dönemde en yüksek {noun} {label}"
+        if current:
+            lead += f" ({current})"
+        lead += "."
+    elif field == "category":
         lead = f"Mevcut incelemede en olumsuz kategori {label}."
     elif field == "region":
         lead = f"Mevcut incelemede en olumsuz bölge {label}."
@@ -124,8 +138,8 @@ def _ranking_contract(run: dict[str, Any], message: str) -> ResponseContract:
     movement = _row_movement(row)
     if movement:
         parts.append(movement)
-    if share_pct is not None:
-        parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)}'ini oluşturuyor.")
+    if share_pct is not None and mode != "top_current":
+        parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)} kadarını oluşturuyor.")
         findings.append(f"Katkı payı %{_fmt(share_pct)}.")
     return ResponseContract(
         answer=" ".join(parts),
@@ -148,7 +162,7 @@ def _slice_contract(run: dict[str, Any], labels: list[str]) -> ResponseContract:
     if movement:
         parts.append(movement)
     if share_pct is not None:
-        parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)}'ini oluşturuyor.")
+        parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)} kadarını oluşturuyor.")
         findings.append(f"Katkı payı %{_fmt(share_pct)}.")
     return ResponseContract(
         answer=" ".join(parts),
@@ -165,7 +179,7 @@ def _row_movement(row: dict[str, Any]) -> str | None:
         return None
     prev_f, curr_f = float(prev), float(curr)
     verb = "azaldı" if curr_f < prev_f else "arttı" if curr_f > prev_f else "değişmedi"
-    return f"Bu dilimde toplam {_amount(prev_f)} değerinden {_amount(curr_f)} değerine {verb}."
+    return f"Bu dilimde toplam {_amount(prev_f)} → {_amount(curr_f)}; {verb}."
 
 
 def _ranking_field(message: str) -> str | None:
@@ -189,24 +203,53 @@ def _segment_entries(run: dict[str, Any]) -> list[tuple[dict[str, Any], str | No
     return out
 
 
-def _worst_row(run: dict[str, Any], field: str | None) -> tuple[dict[str, Any] | None, str | None]:
-    best: tuple[dict[str, Any], str | None] | None = None
-    best_change: float | None = None
+def _ranking_mode(message: str) -> str:
+    t = message.lower()
+    if any(tok in t for tok in ("popüler", "populer", "öne çık", "one cik", "en yüksek", "top")):
+        return "top_current"
+    return "worst_change"
+
+
+def _ranking_row(run: dict[str, Any], field: str | None, mode: str) -> tuple[dict[str, Any] | None, str | None]:
+    rows: list[tuple[dict[str, Any], str | None, list[str]]] = []
     for row, eid, dims in _segment_entries(run):
-        if field and field not in row and field not in dims:
+        if field and _row_key(row, field) is None:
             continue
-        if field and field not in row:
-            continue
-        change = row.get("change")
-        if change is None:
-            continue
-        mag = float(change)
-        if best_change is None or mag < best_change:
-            best_change = mag
-            best = (row, eid)
-    if best:
-        return best
-    return None, None
+        rows.append((row, eid, dims))
+    if field:
+        exact = [(row, eid, dims) for row, eid, dims in rows if _dims_equal(dims, [field])]
+        if exact:
+            rows = exact
+    if not rows:
+        return None, None
+    if mode == "top_current":
+        usable = [(row, eid) for row, eid, _dims in rows if row.get("current") is not None]
+        if not usable:
+            return None, None
+        return max(usable, key=lambda item: float(item[0].get("current") or 0))
+    usable = [(row, eid) for row, eid, _dims in rows if row.get("change") is not None]
+    if not usable:
+        return None, None
+    return min(usable, key=lambda item: float(item[0].get("change") or 0))
+
+
+def _row_key(row: dict[str, Any], wanted: str | None) -> str | None:
+    if not wanted:
+        return None
+    target = wanted.strip().lower()
+    for key in row:
+        if str(key).strip().lower() == target:
+            return str(key)
+    return None
+
+
+def _row_value(row: dict[str, Any], wanted: str | None) -> Any:
+    key = _row_key(row, wanted)
+    return row.get(key) if key else None
+
+
+def _dims_equal(dims: list[str], wanted: list[str]) -> bool:
+    return [str(d).strip().lower() for d in dims] == [str(w).strip().lower() for w in wanted]
 
 
 def _matching_row(run: dict[str, Any], labels: list[str]) -> tuple[dict[str, Any] | None, str | None]:

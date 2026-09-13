@@ -114,9 +114,9 @@ def rank_node(state: GraphState) -> dict:
     if policy == "llm" and raw is not None:
         hyps = apply_llm_rank(raw, roles, ctx.budget)
     elif policy == "llm" and silent_llm_fallback():
-        hyps = _rank_hypotheses(roles, ctx.budget, intent)
+        hyps = _rank_hypotheses(roles, ctx.budget, intent, state["question"])
     else:
-        hyps = _rank_hypotheses(roles, ctx.budget, intent)
+        hyps = _rank_hypotheses(roles, ctx.budget, intent, state["question"])
     ctx.budget.hypotheses_used = len(hyps)
     return {"plan": state["plan"], "hypotheses": hyps, "intent": intent}
 

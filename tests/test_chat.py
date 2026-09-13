@@ -124,6 +124,24 @@ def test_followups_answer_from_existing_evidence():
     assert "neden oldu" not in why["text"].lower()
 
 
+def test_first_ranking_questions_are_not_generic_abstain():
+    client = TestClient(app)
+    ds = client.post("/datasets", json={"fixture_id": "superstore"}).json()
+
+    answers = []
+    for text in ("Hangi kategori öne çıkıyor?", "Hangi bölge öne çıkıyor?"):
+        chat = client.post("/chats", json={"dataset_id": ds["id"]}).json()
+        msg = client.post(f"/chats/{chat['id']}/messages", json={"text": text}).json()["message"]
+        answers.append(msg["text"])
+        assert msg["ran_investigation"] is True
+        assert msg["status"]["decision"] == "ranking"
+        assert "tek bir kaynak işaretlenmedi" not in msg["text"]
+
+    assert answers[0] != answers[1]
+    assert "kategori" in answers[0].lower()
+    assert "bölge" in answers[1].lower()
+
+
 def test_missing_capability_does_not_run_engine():
     client = TestClient(app)
     ds = client.post("/datasets", json={"fixture_id": "clear_driver"}).json()

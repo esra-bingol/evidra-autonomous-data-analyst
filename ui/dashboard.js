@@ -90,6 +90,15 @@ const DECISION_PLAIN = {
   abstain: "Belirgin bir yoğunlaşma yok",
 };
 
+const DECISION_SHORT = {
+  primary_driver: "Yoğunlaşma var",
+  value_not_volume: "Sepet etkisi",
+  data_artefact: "Veri kontrolü",
+  ranking: "Sıralama",
+  association: "İlişki",
+  abstain: "Net sinyal yok",
+};
+
 const CHART_PLAIN = {
   trend: "Dönemler arası değişim",
   contribution: "Hangi dilim değişime katkı verdi",
@@ -104,6 +113,11 @@ function plainDecision(run) {
   const label = run?.investigation_report?.decision_label;
   if (label && !/sürücü|dilim destekleniyor/i.test(label)) return label;
   return "İnceleme tamamlandı";
+}
+
+function shortDecision(run) {
+  const key = run?.decision || "";
+  return DECISION_SHORT[key] || "Tamamlandı";
 }
 
 function plainDriver(run) {
@@ -157,7 +171,7 @@ function renderRecent(runs) {
     date.textContent = formatDate(run.created_at);
     const status = document.createElement("span");
     status.className = "recent-status";
-    status.textContent = plainDecision(run);
+    status.textContent = shortDecision(run);
     header.append(date, status);
     const title = document.createElement("strong");
     title.textContent = run.question || "Adsız inceleme";
@@ -190,7 +204,7 @@ function renderCharts(run) {
     title.textContent = friendlyChartTitle(chart, run.question);
     const cap = document.createElement("p");
     cap.className = "chart-cap";
-    cap.textContent = "Bu görsel son sorunuzun kanıtından üretildi. Ham tablodan sayı uydurulmaz.";
+    cap.textContent = "Bu görsel son incelemenin hesaplanan kanıtından üretildi.";
     const plot = document.createElement("div");
     plot.className = "chart";
     card.append(title, cap, plot);
@@ -219,10 +233,12 @@ function renderMetrics(run) {
   const note = $("kpi-limitation");
   if (!note) return;
   if (empty) {
-    note.textContent = "Bu kartlar son sorduğunuz sorunun incelemesinden gelir. Henüz soru yoksa önce verini bağlayıp bir iş sorusu sorun.";
+    note.textContent = "Son inceleme çalıştığında buradaki kartlar ve grafikler otomatik güncellenir.";
     return;
   }
-  note.textContent = kpi.summary || kpi.question || "";
+  note.textContent = kpi.question
+    ? `Son soru: ${kpi.question}. Ayrıntılı yorum için raporu açın.`
+    : "Ayrıntılı yorum için raporu açın.";
 }
 
 async function loadDashboard() {

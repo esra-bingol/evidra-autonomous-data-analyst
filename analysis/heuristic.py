@@ -61,7 +61,7 @@ def _over_budget(ctx: ToolContext) -> bool:
 
 
 def _rank_hypotheses(
-    roles: list[dict], budget: Budget, intent: str = "why_change"
+    roles: list[dict], budget: Budget, intent: str = "why_change", question: str = ""
 ) -> list[Hypothesis]:
     dims = columns_with_role(roles, "dimension")
     region = column_with_semantic(roles, "region") or column_with_semantic(roles, "country")
@@ -86,13 +86,15 @@ def _rank_hypotheses(
         )
 
     if intent == "ranking":
+        focus = _ranking_focus_dimensions(roles, question)
         geo = [
             r["name"]
             for r in roles
             if r["role"] == "dimension" and r["semantic"] in {"region", "country", "state", "city"}
         ]
         rest = [d for d in dims if d not in geo]
-        for dim in geo + rest:
+        ordered = focus + [d for d in geo + rest if d not in focus]
+        for dim in ordered:
             add("segment_driver", {"dimension": dim})
         return ranked[: budget.max_hypotheses]
 
@@ -110,6 +112,28 @@ def _rank_hypotheses(
     add("anomaly")
     add("association")
     return ranked[: budget.max_hypotheses]
+
+
+def _ranking_focus_dimensions(roles: list[dict], question: str) -> list[str]:
+    q = question.lower()
+    wanted: set[str] = set()
+    if any(tok in q for tok in ("kategori", "category", "ürün", "urun", "product")):
+        wanted.add("product")
+    if any(tok in q for tok in ("bölge", "bolge", "region")):
+        wanted.add("region")
+    if any(tok in q for tok in ("şehir", "sehir", "city")):
+        wanted.add("city")
+    if any(tok in q for tok in ("eyalet", "state")):
+        wanted.add("state")
+    if any(tok in q for tok in ("segment", "müşteri tipi", "musteri tipi")):
+        wanted.add("segment")
+    if not wanted:
+        return []
+    return [
+        r["name"]
+        for r in roles
+        if r.get("role") == "dimension" and str(r.get("semantic") or "").lower() in wanted
+    ]
 
 
 def _experiment_loop(
