@@ -41,9 +41,21 @@ _FIXTURE_FILES = {
     "aov_trap": ROOT / "data" / "fixtures" / "aov_trap.csv",
     "no_signal": ROOT / "data" / "fixtures" / "no_signal.csv",
     "missingness": ROOT / "data" / "fixtures" / "missingness.csv",
+    "taxi_trips": ROOT / "data" / "fixtures" / "taxi_trips.csv",
     "superstore": ROOT / "data" / "raw" / "superstore.csv",
     "olist": ROOT / "data" / "raw",
     "uci_retail": ROOT / "data" / "fixtures" / "retail_line_items.csv",
+}
+
+_FIXTURE_LABELS = {
+    "clear_driver": "Net yoğunlaşma (sentetik)",
+    "aov_trap": "Sepet tuzağı (sentetik)",
+    "no_signal": "Sinyal yok (sentetik)",
+    "missingness": "Eksik pencere (sentetik)",
+    "taxi_trips": "Taksi seferleri",
+    "superstore": "Superstore",
+    "olist": "Olist (çok tablo)",
+    "uci_retail": "Perakende fatura satırı",
 }
 
 _datasets: dict[str, dict[str, Any]] = {}
@@ -81,12 +93,12 @@ def catalog() -> list[dict[str, Any]]:
     rows = []
     for fid, path in _FIXTURE_FILES.items():
         if fid == "olist":
-            rows.append({"id": fid, "name": fid, "path": str(path), "available": is_olist_dir(path)})
+            rows.append({"id": fid, "name": _FIXTURE_LABELS.get(fid, fid), "path": str(path), "available": is_olist_dir(path)})
             continue
         if path.exists():
-            rows.append({"id": fid, "name": fid, "path": str(path), "available": True})
+            rows.append({"id": fid, "name": _FIXTURE_LABELS.get(fid, fid), "path": str(path), "available": True})
         elif fid in {"superstore"}:
-            rows.append({"id": fid, "name": fid, "path": str(path), "available": False})
+            rows.append({"id": fid, "name": _FIXTURE_LABELS.get(fid, fid), "path": str(path), "available": False})
     return rows
 
 
@@ -168,7 +180,7 @@ def _load_chat(chat_id: str) -> dict[str, Any] | None:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="Evidra", version="0.8.0")
+    app = FastAPI(title="Evidra", version="0.15.0")
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -189,7 +201,7 @@ def create_app() -> FastAPI:
             if path is None or (body.fixture_id != "olist" and not path.exists()):
                 raise HTTPException(404, f"fixture not available: {body.fixture_id}")
             did = _new_id("ds")
-            rec = {"id": did, "name": body.fixture_id, "path": str(path), "source": "fixture"}
+            rec = {"id": did, "name": _FIXTURE_LABELS.get(body.fixture_id, body.fixture_id), "path": str(path), "source": "fixture"}
             rec.update(_overview(path))
             _datasets[did] = rec
             store.save_dataset(rec)

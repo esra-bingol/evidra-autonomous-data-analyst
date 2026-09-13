@@ -20,8 +20,10 @@ _METRIC_TOKENS = {
     "score": "review",
     "review": "review",
     "price": "sales",
+    "fare": "sales",
     "freight": "freight",
     "payment": "sales",
+    "passenger": "quantity",
 }
 _DIM_TOKENS = {
     "region": "region",
@@ -34,6 +36,7 @@ _DIM_TOKENS = {
     "segment": "segment",
     "shipmode": "ship_mode",
     "ship_mode": "ship_mode",
+    "borough": "region",
 }
 
 

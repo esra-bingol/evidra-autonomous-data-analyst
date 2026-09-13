@@ -51,6 +51,9 @@ def test_no_signal_does_not_invent_driver():
     assert "en güçlü desteklenen sinyal" not in contract.answer
     assert "west" not in contract.answer.lower()
     assert contract.limitations
+    phrase = "Tek bir bölge veya kategoride toplanmış bir değişim görünmüyor."
+    assert contract.answer.count(phrase) <= 1
+    assert "işaretlenmedi" in contract.answer or "yayıl" in contract.answer
     ok, reasons = validate_response(contract, run)
     assert ok, reasons
 
@@ -134,4 +137,17 @@ def test_limitation_survives_from_report():
     assert run["investigation_report"]["limitations"]
     contract = compose_response(run)
     assert contract.limitations
-    assert any("sürücü" in n or "desteklenmiyor" in n for n in contract.limitations)
+    assert any("yoğunlaş" in n or "toplanmış" in n or "desteklenmiyor" in n for n in contract.limitations)
+
+
+def test_taxi_compose_says_fare_not_sales():
+    run = run_investigation(FIXTURES / "taxi_trips.csv", "Ücret neden değişti?")
+    contract = compose_response(run)
+    assert "Satışlar" not in contract.answer
+    assert "West" not in contract.answer
+    assert "Ücretler" in contract.answer or "ücret" in contract.answer.lower()
+    assert "sürücü" not in contract.answer.lower()
+    phrase = "Tek bir bölge veya kategoride toplanmış bir değişim görünmüyor."
+    assert contract.answer.count(phrase) <= 1
+    ok, reasons = validate_response(contract, run)
+    assert ok, reasons

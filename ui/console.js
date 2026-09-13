@@ -1,9 +1,33 @@
-const EXAMPLES = [
-  { q: "Satış neden değişti?", label: "driver" },
-  { q: "Teslimat gecikmesi puanı nasıl etkiler?", label: "abstain / Olist" },
-  { q: "Yüksek ciro, düşük puan kategorileri hangileri?", label: "Olist join" },
-  { q: "Hangi bölge en yüksek?", label: "ranking" },
+const DEFAULT_EXAMPLES = [
+  { q: "Satış neden değişti?", label: "değişim" },
+  { q: "Hangi bölge öne çıkıyor?", label: "sıralama" },
 ];
+
+const EXAMPLES_BY_FIXTURE = {
+  taxi_trips: [
+    { q: "Ücret neden değişti?", label: "değişim" },
+    { q: "Hangi bölge öne çıkıyor?", label: "sıralama" },
+  ],
+  olist: [
+    { q: "Teslimat gecikmesi puanı nasıl etkiler?", label: "ilişki" },
+    { q: "Hangi kategori öne çıkıyor?", label: "sıralama" },
+  ],
+};
+
+const DECISION_PLAIN = {
+  primary_driver: "Değişim bir yerde yoğunlaşıyor",
+  value_not_volume: "Sipariş sayısı değil, sepet tutarı",
+  data_artefact: "Eksik bir veri penceresi olabilir",
+  ranking: "Sıralama hazır",
+  association: "İlişki var; neden değil",
+  abstain: "Belirgin bir yoğunlaşma yok",
+};
+
+const STOP_PLAIN = {
+  abstain: "yeterli sinyal yok",
+  budget: "araştırma bütçesi doldu",
+  complete: "inceleme tamamlandı",
+};
 
 const $ = (id) => document.getElementById(id);
 
@@ -77,16 +101,17 @@ async function loadFixtures() {
   for (const item of data.items) {
     const opt = document.createElement("option");
     opt.value = item.id;
-    opt.textContent = item.available ? item.id : `${item.id} (yok)`;
+    opt.textContent = item.available ? (item.name || item.id) : `${item.name || item.id} (yok)`;
     opt.disabled = !item.available;
     sel.appendChild(opt);
   }
 }
 
-function renderExamples() {
+function renderExamples(fid) {
   const box = $("examples");
   box.innerHTML = "";
-  for (const ex of EXAMPLES) {
+  const examples = EXAMPLES_BY_FIXTURE[fid] || DEFAULT_EXAMPLES;
+  for (const ex of examples) {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = `${ex.label}: ${ex.q}`;
@@ -136,6 +161,9 @@ async function registerFixture() {
   }
   state.datasetId = ds.id;
   renderDataset(ds);
+  renderExamples(id);
+  $("question").value = (EXAMPLES_BY_FIXTURE[id] || DEFAULT_EXAMPLES)[0].q;
+  showBanner("Veri bağlandı. İnceleme henüz çalışmadı — örnek soruyu çalıştırın.");
   syncRunEnabled();
 }
 
@@ -155,6 +183,8 @@ async function registerFile(file) {
   }
   state.datasetId = ds.id;
   renderDataset(ds);
+  renderExamples();
+  showBanner("Dosya bağlandı. İnceleme henüz çalışmadı — bir iş sorusu yazıp çalıştırın.");
   syncRunEnabled();
 }
 
@@ -203,17 +233,24 @@ function renderFindings(run) {
   bar.replaceChildren();
   const line = document.createElement("p");
   const decision = run.decision || "—";
-  const stop = run.stop_reason || "—";
-  line.textContent = `decision: ${decision} · stop_reason: ${stop}`;
+  const stop = run.stop_reason || "";
+  const report = run.investigation_report || {};
+  const decisionText =
+    report.decision_label || DECISION_PLAIN[decision] || decision;
+  const stopText = STOP_PLAIN[stop];
+  line.textContent = stopText ? `${decisionText} · ${stopText}` : decisionText;
   bar.appendChild(line);
   if (run.id) {
     const a = document.createElement("a");
     a.href = `/report?run=${run.id}`;
-    a.textContent = "Detaylı rapor (V2.6)";
+    a.textContent = "Detaylı raporu aç";
     bar.appendChild(a);
   }
   if (decision === "abstain" || stop === "abstain") {
-    showBanner("Abstain: capability ∩ soru boş veya sinyal yok. Hipotez uydurulmadı.", "warn");
+    showBanner(
+      "Bu soru için mevcut veride belirgin bir yoğunlaşma yok. Uydurma açıklama üretilmedi.",
+      "warn",
+    );
   }
 
   const revBox = $("reviews");
@@ -247,7 +284,7 @@ function renderFindings(run) {
     div.appendChild(p);
     const ids = document.createElement("p");
     ids.className = "mono";
-    ids.textContent = (claim.evidence_ids || []).join(", ") || "(evidence_ids boş — abstention)";
+    ids.textContent = (claim.evidence_ids || []).join(", ") || "Kanıta bağlanmayan kayıt";
     div.appendChild(ids);
     claimsBox.appendChild(div);
   }
@@ -274,7 +311,8 @@ function renderFindings(run) {
 
   const charts = $("charts");
   charts.replaceChildren();
-  (run.charts || []).forEach((ch, i) => {
+  const viz = (run.investigation_report?.visualizations || run.charts || []);
+  viz.forEach((ch, i) => {
     const wrap = document.createElement("div");
     const el = document.createElement("div");
     el.className = "chart";

@@ -252,6 +252,8 @@ Locked in [phases/10-reviewer.md](phases/10-reviewer.md). Not a V1 tool. Sits af
 
 `schema_version` is `v2.12`. Extra fields: `title`, `headline_findings`, `plan_readable`, `decision_label`. Visualizations are selected by question and evidence operation (line / bar / waterfall), not by dumping every tool payload. Each chart cites `evidence_ids` and may cite published `claim_ids`. The original 13 sections remain.
 
+Dashboard (V2.13) reads these fields as investigation KPIs (change %, driver slice, volume/AOV, limitation). Chart count is not a KPI.
+
 ---
 
 ## 11. Retail line-item adapter (V2.7)

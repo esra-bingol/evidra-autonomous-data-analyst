@@ -247,6 +247,7 @@ def collect_rows(
     adversarial: dict[str, Any] | None = None,
     adaptive: dict[str, Any] | None = None,
     uci: dict[str, Any] | None = None,
+    product: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for item in golden.get("items") or []:
@@ -266,6 +267,10 @@ def collect_rows(
         if row:
             rows.append(row)
     for item in (uci or {}).get("items") or []:
+        row = item.get("efficiency_row")
+        if row:
+            rows.append(row)
+    for item in (product or {}).get("items") or []:
         row = item.get("efficiency_row")
         if row:
             rows.append(row)

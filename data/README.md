@@ -4,7 +4,7 @@ Large raw tables are not committed (`data/raw/**`).
 
 | Path | Role |
 | --- | --- |
-| `fixtures/` | Synthetic + UCI-schema retail line items (committed) |
+| `fixtures/` | Synthetic + UCI-schema retail line items + taxi trips (committed) |
 | `raw/superstore.csv` | Local Superstore (optional) |
 | `raw/olist_*.csv` | Local Olist (optional) |
 | `raw/online_retail_ii.xlsx` | Optional UCI Online Retail II workbook |

@@ -1,7 +1,7 @@
 [project]
 name = "evidra"
-version = "0.2.0"
-description = "Evidra analysis engine (Phase 2)"
+version = "0.15.0"
+description = "Evidra investigation engine"
 requires-python = ">=3.11"
 dependencies = [
     "pandas>=2.2",

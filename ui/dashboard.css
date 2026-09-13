@@ -417,7 +417,7 @@ a.secondary {
 .visual-flow {
   margin: 0.8rem 0;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 0.5rem;
 }
 
@@ -440,7 +440,7 @@ a.secondary {
 
 .visual-flow strong {
   margin: 0.4rem 0 0.2rem;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 
 .visual-result {
@@ -479,6 +479,25 @@ a.secondary {
   border-radius: var(--radius-lg);
   background: var(--surface);
   box-shadow: 0 2px 8px rgba(63, 48, 57, 0.04);
+}
+
+.metrics article strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 1.05rem;
+}
+
+.kpi-limitation {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.chart-cap {
+  margin: 0 0 0.4rem;
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .metric-icon {
@@ -676,7 +695,7 @@ a.secondary {
 
 .steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.8rem;
 }
 
@@ -713,6 +732,10 @@ a.secondary {
   }
 
   .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

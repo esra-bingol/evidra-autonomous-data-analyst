@@ -32,7 +32,7 @@ def test_console_is_four_blocks_not_chat(client: TestClient):
     assert "block-question" in html
     assert "block-plan" in html
     assert "block-findings" in html
-    assert "Investigation History" in html
+    assert "İnceleme geçmişi" in html
     assert "chatbot" not in html.lower()
     assert "confidence" not in html.lower()
     css = client.get("/static/console.css").text
@@ -42,13 +42,38 @@ def test_console_is_four_blocks_not_chat(client: TestClient):
     dashboard = client.get("/dashboard")
     assert dashboard.status_code == 200
     assert "Genel bakış" in dashboard.text
-    assert "dashboard.js" in dashboard.text
+    assert "kpi-decision" in dashboard.text
+    assert "Nerede yoğunlaştı" in dashboard.text
+    assert "Verini yükle" in dashboard.text
+    assert "Birincil sürücü" not in dashboard.text
+    assert "Özerk veri analisti" not in dashboard.text
+    assert "Toplam inceleme" not in dashboard.text
+    chat = client.get("/chat")
+    assert chat.status_code == 200
+    assert 'id="file"' in chat.text
+    assert "Rapor / follow-up" in chat.text
+    chat_js = client.get("/static/chat.js").text
+    assert "West'i daha detaylı incele" not in chat_js
+    assert "Evidence raporunu göster" not in chat_js
+    assert "Ücret neden değişti?" in chat_js
     console = client.get("/console")
     assert console.status_code == 200
     assert "block-upload" in console.text
+    console_js = client.get("/static/console.js").text
+    assert "abstain / Olist" not in console_js
+    assert "Ücret neden değişti?" in console_js
+    assert "capability ∩" not in console_js
+    assert "Hipotez uydurulmadı" not in console_js
+    assert "evidence_ids boş" not in console_js
+    assert "Bu soru için mevcut veride belirgin bir yoğunlaşma yok" in console_js
 
 
-def test_fixture_overview_and_clear_driver_association(client: TestClient):
+def test_taxi_fixture_is_catalogued(client: TestClient):
+    items = {row["id"]: row for row in client.get("/fixtures").json()["items"]}
+    assert items["taxi_trips"]["available"] is True
+    bound = client.post("/datasets", json={"fixture_id": "taxi_trips"})
+    assert bound.status_code == 200
+    assert bound.json()["name"] == "Taksi seferleri"
     created = client.post("/datasets", json={"fixture_id": "clear_driver"})
     assert created.status_code == 200
     ds = created.json()

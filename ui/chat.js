@@ -1,10 +1,15 @@
-const EXAMPLES = [
-  "Satış neden değişti?",
-  "West'i daha detaylı incele.",
-  "Araştırma adımlarını göster.",
-  "Evidence raporunu göster.",
-  "Detaylı raporu göster.",
-];
+const DEFAULT_STARTERS = ["Satış neden değişti?", "Hangi bölge öne çıkıyor?"];
+
+const STARTERS = {
+  taxi_trips: ["Ücret neden değişti?", "Hangi bölge öne çıkıyor?"],
+  olist: ["Teslimat gecikmesi puanı nasıl etkiler?", "Hangi kategori öne çıkıyor?"],
+  clear_driver: DEFAULT_STARTERS,
+  aov_trap: DEFAULT_STARTERS,
+  no_signal: DEFAULT_STARTERS,
+  missingness: DEFAULT_STARTERS,
+  superstore: DEFAULT_STARTERS,
+  uci_retail: DEFAULT_STARTERS,
+};
 
 const ICONS = {
   assistant:
@@ -70,10 +75,29 @@ function themedFigure(figure) {
   };
 }
 
-function setWorkflowDone() {
-  document.querySelectorAll(".workflow-list li").forEach((item) => {
-    item.classList.remove("active");
-    item.classList.add("done");
+const DECISION_LABELS = {
+  primary_driver: "öne çıkan dilim",
+  value_not_volume: "sepet tutarı",
+  data_artefact: "veri kalitesi",
+  ranking: "sıralama",
+  association: "ilişki",
+  abstain: "belirgin yoğunlaşma yok",
+};
+
+function startersFor(fid) {
+  return STARTERS[fid] || DEFAULT_STARTERS;
+}
+
+function setWorkspace(name) {
+  const el = $("workspace-name");
+  if (el && name) el.textContent = name;
+}
+
+function setWorkflowStep(step) {
+  document.querySelectorAll(".workflow-list li").forEach((item, index) => {
+    item.classList.remove("active", "done");
+    if (index < step) item.classList.add("done");
+    else if (index === step) item.classList.add("active");
   });
 }
 
@@ -98,7 +122,7 @@ async function renderRunPreview(runId, reportUrl) {
   const metrics = document.createElement("div");
   metrics.className = "metric-grid";
   const metricValues = [
-    ["Karar", run.decision || "—"],
+    ["Sonuç", DECISION_LABELS[run.decision] || run.decision || "—"],
     ["Bulgular", String(findings.length)],
     ["Kanıtlar", String(evidence.length)],
     ["Grafikler", String(charts.length)],
@@ -148,7 +172,7 @@ async function renderRunPreview(runId, reportUrl) {
   link.href = reportUrl || `/report?run=${runId}`;
   link.textContent = "Detaylı raporu aç";
   preview.appendChild(link);
-  setWorkflowDone();
+  setWorkflowStep(3);
 }
 
 function showBanner(text, kind) {
@@ -158,9 +182,10 @@ function showBanner(text, kind) {
   if (kind) el.classList.add(kind);
 }
 
-function fillSuggest(box) {
+function fillSuggest(box, items) {
+  if (!box) return;
   box.innerHTML = "";
-  EXAMPLES.forEach((q) => {
+  (items || startersFor($("fixture")?.value)).forEach((q) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = q;
@@ -171,6 +196,21 @@ function fillSuggest(box) {
     });
     box.appendChild(b);
   });
+}
+
+function refreshStarters() {
+  const items = startersFor($("fixture")?.value);
+  fillSuggest($("examples"), items);
+  fillSuggest($("examples-empty"), items);
+  const help = document.querySelector("#empty .help");
+  if (help && state.datasetId) {
+    help.textContent = "Veri bağlamak inceleme başlatmaz. Aşağıdaki sorulardan birini sorun.";
+  }
+}
+
+function bindHint(fid) {
+  const q = startersFor(fid)[0];
+  return `Veri bağlandı. Bu henüz bir cevap değil — şunu sorun: “${q}”`;
 }
 
 function appendBubble(msg) {
@@ -191,7 +231,7 @@ function appendBubble(msg) {
   if (msg.report_url) {
     const a = document.createElement("a");
     a.href = msg.report_url;
-    a.textContent = "Open detailed report";
+    a.textContent = "Detaylı raporu aç";
     stack.appendChild(a);
   }
   if (msg.role !== "user") {
@@ -199,12 +239,10 @@ function appendBubble(msg) {
     refs.className = "refs";
     const st = msg.status || {};
     const bits = [
-      st.decision ? `status ${st.decision}` : null,
-      st.stop_reason ? st.stop_reason : null,
-      msg.run_id ? `run ${msg.run_id}` : null,
-      (msg.claim_ids || []).length ? `claims ${(msg.claim_ids || []).join(", ")}` : null,
-      (msg.evidence_ids || []).length ? `evidence ${(msg.evidence_ids || []).join(", ")}` : null,
-      msg.intent ? msg.intent : null,
+      st.decision ? DECISION_LABELS[st.decision] || st.decision : null,
+      msg.run_id ? "inceleme hazır" : null,
+      (msg.claim_ids || []).length ? `${(msg.claim_ids || []).length} bulgu` : null,
+      (msg.evidence_ids || []).length ? `${(msg.evidence_ids || []).length} kanıt` : null,
     ].filter(Boolean);
     for (const bit of bits) {
       const chip = document.createElement("span");
@@ -220,6 +258,7 @@ function appendBubble(msg) {
   log.scrollTop = log.scrollHeight;
   if (msg.role !== "user" && msg.run_id) {
     renderRunPreview(msg.run_id, msg.report_url);
+    loadFollowUps(msg.run_id);
   }
 }
 
@@ -245,9 +284,9 @@ function renderHistory(messages) {
     empty.id = "empty";
     empty.className = "empty-card";
     empty.innerHTML =
-      `<span class="empty-icon">${ICONS.empty}</span><p class="hello">Verileriniz hakkında bir soru sorun</p><p class="help">Satış değişimlerini, segmentleri ve mevcut inceleme bulgularını doğal dille keşfedin.</p><div class="suggest" id="examples-empty"></div>`;
+      `<span class="empty-icon">${ICONS.empty}</span><p class="hello">Verileriniz hakkında bir soru sorun</p><p class="help">Veri bağlamak cevap üretmez. Bu veri setine uygun bir soru sorun.</p><div class="suggest" id="examples-empty"></div>`;
     $("log").appendChild(empty);
-    fillSuggest($("examples-empty"));
+    refreshStarters();
     return;
   }
   for (const msg of messages) appendBubble(msg);
@@ -265,7 +304,7 @@ async function loadFixtures() {
   for (const item of data.items) {
     const opt = document.createElement("option");
     opt.value = item.id;
-    opt.textContent = item.available ? item.id : `${item.id} (yok)`;
+    opt.textContent = item.available ? (item.name || item.id) : `${item.name || item.id} (yok)`;
     opt.disabled = !item.available;
     sel.appendChild(opt);
   }
@@ -297,9 +336,67 @@ async function bindDataset() {
   state.chatId = body.id;
   $("dataset-meta").textContent = `${ds.name} bağlı`;
   $("context-dataset").textContent = ds.name;
+  setWorkspace(ds.name);
+  setWorkflowStep(0);
   renderHistory([]);
-  showBanner("Dataset bağlandı. Follow-up son run state’ini kullanır.");
+  refreshStarters();
+  showBanner(bindHint(fid));
   syncSend();
+}
+
+async function bindFile(file) {
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch("/datasets", { method: "POST", body });
+  const ds = await res.json();
+  if (!res.ok) {
+    showBanner(ds.detail || "dosya okunamadı", "err");
+    return;
+  }
+  state.datasetId = ds.id;
+  const chat = await fetch("/chats", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dataset_id: ds.id }),
+  });
+  const chatBody = await chat.json();
+  if (!chat.ok) {
+    showBanner(chatBody.detail || "sohbet açılamadı", "err");
+    return;
+  }
+  state.chatId = chatBody.id;
+  $("dataset-meta").textContent = `${ds.name} yüklendi`;
+  $("context-dataset").textContent = ds.name;
+  setWorkspace(ds.name);
+  setWorkflowStep(0);
+  renderHistory([]);
+  fillSuggest($("examples"), DEFAULT_STARTERS);
+  fillSuggest($("examples-empty"), DEFAULT_STARTERS);
+  showBanner("Dosya bağlandı. Bu henüz bir cevap değil — bir iş sorusu sorun.");
+  syncSend();
+}
+
+async function loadFollowUps(runId) {
+  const res = await fetch(`/runs/${runId}`);
+  if (!res.ok) return;
+  const run = await res.json();
+  const next = run.investigation_report?.recommended_next_investigations || [];
+  const extras = ["Detaylı raporu göster.", "Araştırma adımlarını göster."];
+  const items = [...next.slice(0, 2), ...extras];
+  const box = $("examples");
+  if (!box) return;
+  box.innerHTML = "";
+  items.forEach((q) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = q;
+    b.addEventListener("click", () => {
+      $("msg").value = q;
+      syncSend();
+      $("msg").focus();
+    });
+    box.appendChild(b);
+  });
 }
 
 async function sendMessage(ev) {
@@ -311,6 +408,7 @@ async function sendMessage(ev) {
   appendBubble({ role: "user", text });
   $("msg").value = "";
   setThinking(true);
+  setWorkflowStep(1);
   const res = await fetch(`/chats/${state.chatId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -330,9 +428,18 @@ async function sendMessage(ev) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   await loadFixtures();
-  fillSuggest($("examples"));
-  fillSuggest($("examples-empty"));
+  refreshStarters();
   $("btn-fixture").addEventListener("click", bindDataset);
+  $("fixture").addEventListener("change", () => {
+    if ($("empty")) refreshStarters();
+  });
+  const file = $("file");
+  if (file) {
+    file.addEventListener("change", (ev) => {
+      const picked = ev.target.files?.[0];
+      if (picked) bindFile(picked);
+    });
+  }
   $("composer").addEventListener("submit", sendMessage);
   $("msg").addEventListener("input", syncSend);
   $("msg").addEventListener("keydown", (ev) => {
@@ -342,4 +449,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
   syncSend();
+  const wanted = new URLSearchParams(location.search).get("fixture");
+  if (wanted) {
+    const sel = $("fixture");
+    if ([...sel.options].some((opt) => opt.value === wanted && !opt.disabled)) {
+      sel.value = wanted;
+      bindDataset();
+    }
+  }
 });

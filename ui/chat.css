@@ -250,6 +250,12 @@ textarea:focus-visible {
   font-size: var(--font-size-sm);
 }
 
+.rail-card input[type="file"] {
+  width: 100%;
+  margin: 0 0 var(--space-2);
+  font-size: var(--font-size-sm);
+}
+
 .rail-card select {
   width: 100%;
   min-height: var(--control-height);

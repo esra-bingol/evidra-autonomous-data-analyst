@@ -9,3 +9,5 @@ __pycache__/
 *.egg-info/
 .venv/
 evals/out/
+docs/screenshots/*.png
+docs/screenshots/*.jpg

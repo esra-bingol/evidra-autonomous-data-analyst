@@ -15,6 +15,11 @@ FALLBACK = (
     "Bu incelemeden güvenilir bir sonuç çıkaramıyorum. "
     "Mevcut kanıtlar bu soruyu yeterince desteklemiyor."
 )
+NO_CONCENTRATION = "Tek bir bölge veya kategoride toplanmış bir değişim görünmüyor."
+ABSTAIN_NO_SIGNAL = (
+    "Bu soruyu mevcut tabloda güvenilir biçimde test edebilecek bir sinyal yok. "
+    "Uydurma açıklama üretilmedi."
+)
 
 _ENGINE_LEAK = re.compile(
     r"\b(associated|primary_driver|share_of_change|compare_periods|segment_by|"
@@ -240,13 +245,16 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
     decision = run.get("decision") or "abstain"
 
     if not _has_strong_finding(accepted, decision):
-        parts.append(_abstain_lead(change))
-        findings.append("Yoğunlaşmış bir sürücü desteklenmiyor.")
-        refs.extend(_evidence_ids(run, {"compare_periods"}))
+        parts.append(abstain_explanation(run))
+        if change is None:
+            findings.append("Bu soru mevcut tabloda test edilemedi.")
+        else:
+            findings.append("Değişim yayılmış; tek bir kaynak işaretlenmedi.")
+        refs.extend(_evidence_ids(run, {"compare_periods", "segment_by", "decompose_volume_value"}))
     elif decision == "primary_driver" and driver:
         if change is not None:
-            parts.append(_change_sentence(change))
-            findings.append(_change_sentence(change))
+            parts.append(_change_sentence(change, run))
+            findings.append(_change_sentence(change, run))
             refs.extend(_evidence_ids(run, {"compare_periods"}))
         loc = _driver_phrase(str(driver))
         share_pct = _share_as_percent(share)
@@ -272,8 +280,8 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
             findings.append("Sinyal: hacim daralması, sepet küçülmesi değil.")
     elif decision == "value_not_volume":
         if change is not None:
-            parts.append(_change_sentence(change))
-            findings.append(_change_sentence(change))
+            parts.append(_change_sentence(change, run))
+            findings.append(_change_sentence(change, run))
         aov = vol.get("aov_change_pct")
         volume = vol.get("volume_change_pct")
         parts.append(
@@ -285,7 +293,7 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
         refs.extend(_evidence_ids(run, {"decompose_volume_value", "compare_periods"}))
     elif decision == "data_artefact":
         if change is not None:
-            parts.append(_change_sentence(change))
+            parts.append(_change_sentence(change, run))
         parts.append(
             "Görünen değişim eksik veya kesilmiş bir güncel dönemle birlikte görülüyor; "
             "bunu veri kalitesi işareti olarak okumak gerekir."
@@ -310,23 +318,23 @@ def _compose_unchecked(run: dict[str, Any]) -> ResponseContract:
     else:
         text = _first_accepted_text(accepted)
         if change is not None:
-            parts.append(_change_sentence(change))
+            parts.append(_change_sentence(change, run))
         if text:
             parts.append(_soften_claim(text))
         refs.extend(_claim_evidence_ids(accepted))
 
     limitations = _limitations_tr(run, decision)
-    if limitations:
-        closing = limitations[0] if decision == "abstain" else _pick_limitation(limitations)
-        if closing not in parts:
+    if limitations and decision != "abstain":
+        closing = _pick_limitation(limitations)
+        if closing and not _already_said(closing, parts):
             parts.append(closing)
-    answer = " ".join(p.strip() for p in parts if p and p.strip())
+    answer = _join_parts(parts) or FALLBACK
     return ResponseContract(
-        answer=answer or FALLBACK,
-        key_findings=findings[:6],
+        answer=answer,
+        key_findings=_uniq(findings)[:6],
         evidence_refs=_uniq(refs),
         limitations=limitations,
-        suggested_followups=["Detaylı raporu göster.", "Evidence listesini göster."],
+        suggested_followups=_followups(run, decision),
     )
 
 
@@ -466,7 +474,7 @@ def _normalize_decimals(text: str) -> str:
 def _limitations_tr(run: dict[str, Any], decision: str) -> list[str]:
     notes: list[str] = []
     if decision == "abstain" or run.get("stop_reason") == "abstain":
-        notes.append("Yoğunlaşmış bir sürücü bu incelemede desteklenmiyor.")
+        notes.append(NO_CONCENTRATION)
     notes.append(
         "Ancak bu veriden değişimin altında yatan nedeni kesin olarak belirlemek mümkün değil; "
         "ifade ilişki dilindedir."
@@ -474,7 +482,7 @@ def _limitations_tr(run: dict[str, Any], decision: str) -> list[str]:
     if run.get("stop_reason") == "budget":
         notes.append("Araştırma bütçesi daha güçlü bir sonuca ulaşmadan doldu.")
     if run.get("insufficient_kind") == "multiple_plausible_drivers":
-        notes.append("Birden fazla dilim sürücü eşiğini geçiyor.")
+        notes.append("Birden fazla dilim eşik değerini aşıyor.")
     for ev in run.get("evidence") or []:
         if ev.get("operation") != "current_coverage":
             continue
@@ -490,18 +498,99 @@ def _pick_limitation(notes: list[str]) -> str:
     return notes[-1]
 
 
-def _abstain_lead(change: float | None) -> str:
+def _already_said(text: str, parts: list[str]) -> bool:
+    blob = " ".join(parts)
+    return text in blob
+
+
+def _join_parts(parts: list[str]) -> str:
+    seen: list[str] = []
+    for raw in parts:
+        chunk = (raw or "").strip()
+        if not chunk:
+            continue
+        for sent in re.split(r"(?<=[.!?])\s+", chunk):
+            sent = sent.strip()
+            if not sent:
+                continue
+            if sent in seen or any(sent in prev for prev in seen):
+                continue
+            seen.append(sent)
+    return " ".join(seen)
+
+
+def _followups(run: dict[str, Any], decision: str) -> list[str]:
+    items: list[str] = []
+    if decision == "abstain" and _has_segment_evidence(run):
+        items.extend(["Hangi bölge öne çıkıyor?", "Hangi kategori öne çıkıyor?"])
+    items.append("Detaylı raporu göster.")
+    return items
+
+
+def _has_segment_evidence(run: dict[str, Any] | None) -> bool:
+    for ev in (run or {}).get("evidence") or []:
+        if ev.get("operation") == "segment_by" and (ev.get("value") or {}).get("rows"):
+            return True
+    return False
+
+
+def abstain_explanation(run: dict[str, Any] | None = None) -> str:
+    run = run or {}
+    change = _change_pct(run)
     if change is None:
-        return FALLBACK
-    return f"{_change_sentence(change)} Yoğunlaşmış bir sürücü desteklenmiyor."
+        return ABSTAIN_NO_SIGNAL
+    parts = [_change_sentence(change, run)]
+    if _has_segment_evidence(run):
+        if change < 0:
+            parts.append(
+                "Bölge ve kategori dilimleri karşılaştırıldı; azalış tek bir yerde toplanmıyor, "
+                "birkaç dilime yayılıyor."
+            )
+        elif change > 0:
+            parts.append(
+                "Bölge ve kategori dilimleri karşılaştırıldı; artış tek bir yerde toplanmıyor, "
+                "birkaç dilime yayılıyor."
+            )
+        else:
+            parts.append("Dilim karşılaştırmasında da öne çıkan bir yoğunlaşma yok.")
+        parts.append("Bu yüzden tek bir kaynak işaretlenmedi.")
+        vol = _volume_value(run)
+        volume = vol.get("volume_change_pct")
+        aov = vol.get("aov_change_pct")
+        if volume is not None and aov is not None:
+            parts.append(
+                f"Sipariş hacmi {_signed_pct(float(volume))}, "
+                f"ortalama sepet tutarı {_signed_pct(float(aov))}."
+            )
+        parts.append("Hangi bölge veya kategorinin daha olumsuz göründüğünü ayrıca sorabilirsiniz.")
+    else:
+        parts.append(NO_CONCENTRATION)
+        parts.append("Bu yüzden tek bir kaynak işaretlenmedi.")
+    return " ".join(parts)
 
 
-def _change_sentence(change: float) -> str:
+def _abstain_lead(change: float | None, run: dict[str, Any] | None = None) -> str:
+    return abstain_explanation(run)
+
+
+def _metric_noun(run: dict[str, Any] | None) -> str:
+    metric = ""
+    for ev in (run or {}).get("evidence") or []:
+        if ev.get("operation") == "compare_periods":
+            metric = str((ev.get("value") or {}).get("metric") or "").lower()
+            break
+    if "fare" in metric:
+        return "Ücretler"
+    return "Satışlar"
+
+
+def _change_sentence(change: float, run: dict[str, Any] | None = None) -> str:
+    noun = _metric_noun(run)
     if change < 0:
-        return f"Satışlar bu dönemde %{_fmt(abs(change))} azaldı."
+        return f"{noun} bu dönemde %{_fmt(abs(change))} azaldı."
     if change > 0:
-        return f"Satışlar bu dönemde %{_fmt(change)} arttı."
-    return "Satışlar bu dönemde belirgin değişmedi."
+        return f"{noun} bu dönemde %{_fmt(change)} arttı."
+    return f"{noun} bu dönemde belirgin değişmedi."
 
 
 def _aov_clause(aov: float) -> str:

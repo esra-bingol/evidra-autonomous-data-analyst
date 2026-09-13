@@ -8,6 +8,7 @@ from analysis.eval.adaptive import run_adaptive
 from analysis.eval.adversarial import run_adversarial
 from analysis.eval.efficiency import build_report, collect_rows
 from analysis.eval.olist_rubric import run_olist_rubric
+from analysis.eval.product import run_product
 from analysis.eval.runner import run_suite
 from analysis.eval.uci_retail import run_uci_retail
 
@@ -27,11 +28,13 @@ def main(argv: list[str] | None = None) -> None:
     adversarial = run_adversarial()
     adaptive = run_adaptive()
     uci = run_uci_retail()
+    product = run_product()
     report["olist_rubric"] = olist
     report["adversarial"] = adversarial
     report["adaptive"] = adaptive
     report["uci_retail"] = uci
-    efficiency = build_report(collect_rows(report, olist, adversarial, adaptive, uci))
+    report["product"] = product
+    efficiency = build_report(collect_rows(report, olist, adversarial, adaptive, uci, product))
     report["efficiency"] = {
         "efficiency_enforced": efficiency["efficiency_enforced"],
         "gate_order": efficiency["gate_order"],
@@ -46,6 +49,7 @@ def main(argv: list[str] | None = None) -> None:
         and adversarial.get("must_pass_ok", True)
         and adaptive.get("pass", True)
         and uci.get("pass", True)
+        and product.get("pass", True)
     )
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -75,6 +79,11 @@ def main(argv: list[str] | None = None) -> None:
                 "uci_retail": {
                     "pass": (report.get("uci_retail") or {}).get("pass"),
                     "n_pass": (report.get("uci_retail") or {}).get("n_pass"),
+                },
+                "product": {
+                    "pass": (report.get("product") or {}).get("pass"),
+                    "n_pass": (report.get("product") or {}).get("n_pass"),
+                    "n_skipped": (report.get("product") or {}).get("n_skipped"),
                 },
                 "efficiency": {
                     "enforced": (report.get("efficiency") or {}).get("efficiency_enforced"),

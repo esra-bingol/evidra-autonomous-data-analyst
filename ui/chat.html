@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Evidra — Sohbet yüzeyi</title>
-    <link rel="stylesheet" href="/static/chat.css?v=5" />
+    <link rel="stylesheet" href="/static/chat.css?v=7" />
     <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
-    <script src="/static/chat.js?v=5" defer></script>
+    <script src="/static/chat.js?v=7" defer></script>
   </head>
   <body>
     <aside class="rail">
@@ -24,7 +24,7 @@
         <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true">
           <path d="M4 19V9m6 10V5m6 14v-7m4 7H2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
         </svg>
-        <span>Superstore analizi</span>
+        <span id="workspace-name">Evidra çalışma alanı</span>
       </div>
 
       <nav class="rail-nav" aria-label="Ana navigasyon">
@@ -74,6 +74,8 @@
         <label for="fixture">Örnek veri seti</label>
         <select id="fixture"></select>
         <button type="button" id="btn-fixture" class="btn-primary">Veri setini bağla</button>
+        <label for="file">veya CSV / Excel yükle</label>
+        <input id="file" type="file" accept=".csv,.txt,.xlsx,.xls" />
         <p id="dataset-meta" class="meta">Sohbete başlamak için bir veri seti bağlayın.</p>
       </section>
     </aside>
@@ -82,7 +84,7 @@
       <div class="stage-inner">
         <header class="workspace-topbar">
           <div>
-            <p class="head-kicker">Conversational analytics</p>
+            <p class="head-kicker">Analitik sohbet</p>
             <h2>Verinizle konuşun, kanıtı görün</h2>
             <p>Bir iş sorusu sorun; Evidra bulguları, kanıtları ve grafikleri aynı çalışma alanında toplasın.</p>
           </div>
@@ -103,7 +105,7 @@
               </svg>
             </span>
             <div>
-              <p class="head-kicker">Investigation workspace</p>
+              <p class="head-kicker">İnceleme alanı</p>
               <p class="head-title">Analiz sohbeti</p>
             </div>
             <span class="head-status"><span class="status-dot" aria-hidden="true"></span>Hazır</span>
@@ -117,7 +119,7 @@
                 </svg>
               </span>
               <p class="hello">Verileriniz hakkında bir soru sorun</p>
-              <p class="help">Satış değişimlerini, segmentleri ve mevcut inceleme bulgularını doğal dille keşfedin.</p>
+              <p class="help">Veri bağlamak cevap üretmez. Bu veri setine uygun bir soru sorun.</p>
               <div class="suggest" id="examples-empty"></div>
             </div>
           </div>
@@ -140,7 +142,7 @@
           <aside class="context-panel" aria-label="Analiz bağlamı">
             <div class="context-head">
               <div>
-                <p class="head-kicker">Live context</p>
+                <p class="head-kicker">Canlı bağlam</p>
                 <h2>Analiz özeti</h2>
               </div>
               <span class="context-live"><span aria-hidden="true"></span>Canlı</span>
@@ -164,9 +166,10 @@
             <section class="context-section">
               <p class="context-label">İnceleme akışı</p>
               <ol class="workflow-list">
-                <li class="active"><span>1</span><div><strong>Soruyu anla</strong><small>İş bağlamını sınıflandır</small></div></li>
-                <li><span>2</span><div><strong>Kanıtı araştır</strong><small>Doğrulanmış araçları çalıştır</small></div></li>
-                <li><span>3</span><div><strong>Sonucu açıkla</strong><small>Bulgu ve görselleri sun</small></div></li>
+                <li class="active"><span>1</span><div><strong>Soruyu sor</strong><small>Veri setini bağla</small></div></li>
+                <li><span>2</span><div><strong>İnceleme</strong><small>Kapalı hipotezleri test et</small></div></li>
+                <li><span>3</span><div><strong>Bulgular</strong><small>Kanıt ve grafikleri gör</small></div></li>
+                <li><span>4</span><div><strong>Rapor / follow-up</strong><small>Belgeyi aç veya dilimi sor</small></div></li>
               </ol>
             </section>
 

@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "id": "prod-taxi-why",
+      "dataset": "taxi_trips",
+      "question": "Ücret neden değişti?",
+      "checks": ["compare_periods", "segment_borough", "completeness", "evidence_valid", "no_causal", "charts_bound"]
+    },
+    {
+      "id": "prod-taxi-rank",
+      "dataset": "taxi_trips",
+      "question": "Hangi bölge en yüksek?",
+      "checks": ["ranking", "segment_borough", "completeness", "evidence_valid", "no_causal"]
+    },
+    {
+      "id": "prod-taxi-delivery-abstain",
+      "dataset": "taxi_trips",
+      "question": "Teslimat gecikmesi puanı nasıl etkiler?",
+      "checks": ["abstain", "hypotheses_empty", "no_delivery_capability"]
+    },
+    {
+      "id": "prod-ss-why",
+      "dataset": "superstore",
+      "optional": true,
+      "question": "Satış neden değişti?",
+      "checks": ["compare_periods", "completeness", "evidence_valid", "no_causal", "charts_bound"]
+    },
+    {
+      "id": "prod-ss-rank",
+      "dataset": "superstore",
+      "optional": true,
+      "question": "Hangi bölge en yüksek?",
+      "checks": ["ranking", "completeness", "evidence_valid", "no_causal"]
+    },
+    {
+      "id": "prod-olist-assoc",
+      "dataset": "olist",
+      "optional": true,
+      "question": "Teslimat gecikmesi ile review score arasında association var mı?",
+      "checks": ["association_or_abstain", "completeness", "no_causal"]
+    }
+  ]
+}

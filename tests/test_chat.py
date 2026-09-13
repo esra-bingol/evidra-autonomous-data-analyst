@@ -164,3 +164,42 @@ def test_west_why_opens_scoped_run_in_same_chat():
     assert saved.get("parent_run_id") == first_run
     assert saved.get("scope") == {"region": "West"}
     assert saved.get("investigation_report")
+
+
+def test_taxi_chat_does_not_talk_about_sales_or_west():
+    client = TestClient(app)
+    ds = client.post("/datasets", json={"fixture_id": "taxi_trips"}).json()
+    chat = client.post("/chats", json={"dataset_id": ds["id"]}).json()
+    msg = client.post(
+        f"/chats/{chat['id']}/messages",
+        json={"text": "Ücret neden değişti?"},
+    ).json()["message"]
+    assert msg["ran_investigation"] is True
+    assert "Satışlar" not in msg["text"]
+    assert "West" not in msg["text"]
+    assert "sürücü" not in msg["text"].lower()
+    assert "Ücretler" in msg["text"] or "ücret" in msg["text"].lower()
+
+
+def test_meta_intents_are_human_turkish():
+    client = TestClient(app)
+    chat, _first = _start_sales_chat(client)
+    steps = client.post(
+        f"/chats/{chat['id']}/messages",
+        json={"text": "Araştırma adımlarını göster."},
+    ).json()["message"]
+    assert "template_id" not in steps["text"]
+    assert "Next:" not in steps["text"]
+    assert "İnceleme şöyle ilerledi" in steps["text"] or "Veri seti incelendi" in steps["text"]
+    evidence = client.post(
+        f"/chats/{chat['id']}/messages",
+        json={"text": "Evidence listesini göster."},
+    ).json()["message"]
+    assert "ev-" not in evidence["text"]
+    assert "kanıt" in evidence["text"].lower()
+    report = client.post(
+        f"/chats/{chat['id']}/messages",
+        json={"text": "Detaylı raporu göster."},
+    ).json()["message"]
+    assert "investigation state" not in report["text"].lower()
+    assert "Detaylı rapor hazır" in report["text"]

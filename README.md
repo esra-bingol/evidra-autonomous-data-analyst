@@ -63,7 +63,7 @@ Implementation follows staged work orders with exit criteria. Application code i
 | [docs/DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) | Second-pass decisions: accepted, narrowed, not adopted |
 | [docs/phases/](docs/phases/) | Phases 0–10: tasks and exit criteria |
 
-**Data progression:** synthetic fixtures with planted ground truth (correctness) → Superstore (single-table generalization) → Olist (structural multi-table benchmark) → V2.7 UCI-schema retail line items (adapter, not V1 golden). Olist is not a V1 dataset.
+**Data progression:** synthetic fixtures with planted ground truth (correctness) → Superstore (single-table generalization) → Olist (structural multi-table benchmark) → V2.7 UCI-schema retail line items (adapter) → V2.14 taxi-trip fixture (geo/time schema, not a new tool). Olist is not a V1 dataset.
 
 **V1 includes:** a single Analysis Agent; closed hypothesis templates; capability detection and abstention; research budget and stop conditions; evidence as an engine return type; claim validation; heuristic and optional LLM sharing the same graph; CLI/API and eval as the core product; a later minimal four-block UI.
 
@@ -90,7 +90,7 @@ Heuristic policy, no UI:
 
 ```bash
 uv run python -m analysis.eval
-uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py tests/test_api.py tests/test_reviewer.py tests/test_adversarial.py tests/test_efficiency.py tests/test_adaptive.py
+uv run pytest tests/test_eval.py tests/test_analysis_engine.py tests/test_evidence.py tests/test_heuristic.py tests/test_graph.py tests/test_api.py tests/test_reviewer.py tests/test_adversarial.py tests/test_efficiency.py tests/test_adaptive.py tests/test_product.py
 ```
 
 Golden matrix: `evals/golden.json` (~20 items: driver, trap, abstain, interaction, temporal, anomaly, numerical, plus a budget item). Gates are correctness, evidence binding, completeness (`stop_reason`), and forbidden language. Tool counts and latency go to `evals/out/efficiency_log.jsonl` and are **not** a release gate.
@@ -103,20 +103,23 @@ Adaptive Research (`python -m analysis.eval.adaptive`, V2.4) continues with a cl
 
 ---
 
-## Console (Phase 7)
+## Console and product surface
 
-Same investigation graph. No fifth visualization panel. Local, no auth. Port **8765** (not 3000 / 5173 / 8080).
+Same investigation graph. Local, no auth. Port **8765**. Demo script: [docs/DEMO.md](docs/DEMO.md).
 
 ```bash
 uv sync --extra dev
 uv run python -m analysis.api
 ```
 
-Open `http://127.0.0.1:8765`. Four blocks: dataset, question, plan, findings + nested charts and evidence.
+- `http://127.0.0.1:8765/chat?fixture=clear_driver` — bind data, ask, follow up, open the report
+- `http://127.0.0.1:8765/dashboard` — last investigation KPIs (change %, driver slice, volume/AOV), not a BI chart wall
+- `http://127.0.0.1:8765/report?run={id}` — standalone Turkish document; chart types from question + evidence
+- `http://127.0.0.1:8765/console` — four-block investigation console
 
-Conversational surface (V2.5, same engine): `http://127.0.0.1:8765/chat`. Follow-ups reuse the last run; chat text is not SQL.
+Chat accepts a fixture or a CSV/Excel upload. After a run, suggested follow-ups come from the report. Dashboard KPIs are taken from the latest completed investigation.
 
-Investigation report (V2.11–V2.12): `http://127.0.0.1:8765/report?run={id}`. Standalone Turkish document from validated state. Charts are chosen from the question and evidence (`analysis/charts.py`): trend is a line, slice comparison is a bar, contribution is a waterfall. Y values still come only from evidence. [docs/phases/10-v2.12-visualization.md](docs/phases/10-v2.12-visualization.md).
+Taxi trips fixture (V2.14): `taxi_trips` / `data/fixtures/taxi_trips.csv`. Product questions: `evals/product.json`. Superstore and Olist questions skip if the local files are missing.
 
 Retail line-item adapter (V2.7, UCI Online Retail II schema): fixture `uci_retail` / `data/fixtures/retail_line_items.csv`. Optional full workbook in `data/raw/` (not committed). Process rubric: `evals/uci_retail.json`.
 
@@ -127,9 +130,9 @@ API:
 - `POST /datasets/{id}/analyze` — `{ "question": "..." }` (completed run is written under `data/processed/runs/`)
 - `GET /runs` — metadata list (`id`, question, dataset_id, status, timestamps)
 - `GET /runs/{id}` — plan, claims, evidence, reviews, charts, traces, `stop_reason`, `investigation_report` (survives process restart)
-- `GET /runs/{id}/report` — the V2.6 report schema
+- `GET /runs/{id}/report` — investigation report (`schema_version` v2.12)
 
-Tests isolate persistence with `EVIDRA_DATA`. Missing run is 404; corrupt JSON is 422. Completed records are immutable. Console: Investigation History links to `/report?run=`.
+Tests isolate persistence with `EVIDRA_DATA`. Missing run is 404; corrupt JSON is 422. Completed records are immutable. Console inceleme geçmişi `/report?run=` bağlanır.
 
 Upload limits (V2.9, HTTP multipart only — not fixture/CLI/Olist): env `EVIDRA_MAX_UPLOAD_BYTES` (default 10 MiB), `EVIDRA_MAX_UPLOAD_ROWS` (50_000), `EVIDRA_MAX_UPLOAD_COLUMNS` (64), `EVIDRA_MAX_UPLOAD_CELL_LENGTH` (4096), `EVIDRA_MAX_ZIP_UNCOMPRESSED_BYTES` (10 MiB), `EVIDRA_MAX_ZIP_MEMBERS` (16). Oversized body: **413**. Structural/filename/archive shape: **400**. Investigation `Budget.max_seconds` (60) is separate. See [docs/phases/10-v2.9-limits.md](docs/phases/10-v2.9-limits.md).
 

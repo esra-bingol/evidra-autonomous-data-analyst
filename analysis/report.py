@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 from analysis.charts import build_charts
+from analysis.response import abstain_explanation
 
 SECTION_KEYS = (
     "executive_summary",
@@ -45,7 +46,7 @@ DECISION_LABELS = {
     "data_artefact": "Veri kalitesi işareti",
     "ranking": "Sıralama",
     "association": "İlişki",
-    "abstain": "Yoğunlaşmış sürücü yok",
+    "abstain": "Belirgin yoğunlaşma yok",
 }
 
 OPERATION_LABELS = {
@@ -106,6 +107,8 @@ def _title(run: dict[str, Any]) -> str:
         if len(values) >= 2:
             return f"{values[0]} × {values[1]} dilimi incelemesi"
     q = str(run.get("question") or "").lower()
+    if "ücret" in q or "fare" in q:
+        return "Ücret değişimi incelemesi"
     if "satış" in q or "sales" in q:
         return "Satış değişimi incelemesi"
     if "teslimat" in q or "delivery" in q:
@@ -115,11 +118,16 @@ def _title(run: dict[str, Any]) -> str:
 
 def _executive_summary(run: dict[str, Any]) -> str:
     decision = run.get("decision") or "abstain"
+    if decision == "abstain":
+        text = abstain_explanation(run)
+        if _ENGINE_LEAK.search(text):
+            return "Bu incelemenin yayımlanan sonucu mevcut kanıtlara bağlıdır; motor jargonu rapora yazılmaz."
+        return text
     change = _change_pct(run)
     driver = run.get("primary_driver")
     parts: list[str] = []
     if change is not None:
-        parts.append(_change_sentence(change))
+        parts.append(_change_sentence(change, run))
     if decision == "primary_driver" and driver:
         parts.append(f"En güçlü desteklenen sinyal {_driver_phrase(str(driver))}.")
     elif decision == "value_not_volume":
@@ -130,11 +138,6 @@ def _executive_summary(run: dict[str, Any]) -> str:
         parts.append(f"Karşılaştırmada öne çıkan dilim {_driver_phrase(str(driver))}.")
     elif decision == "association":
         parts.append("Bulgu bir ilişki ifadesidir, nedensellik değil.")
-    elif decision == "abstain":
-        if not parts:
-            parts.append("Bu incelemeden yoğunlaşmış bir sürücü desteklenmiyor.")
-        else:
-            parts.append("Yoğunlaşmış bir sürücü desteklenmiyor.")
     text = " ".join(parts)
     if _ENGINE_LEAK.search(text):
         return "Bu incelemenin yayımlanan sonucu mevcut kanıtlara bağlıdır; motor jargonu rapora yazılmaz."
@@ -175,7 +178,7 @@ def _headline_findings(run: dict[str, Any], _evidence: list[dict[str, Any]]) -> 
     elif decision == "data_artefact":
         add("Güncel dönem penceresi eksik olabilir", {"current_coverage"})
     else:
-        add("Yoğunlaşmış bir sürücü desteklenmiyor", {"compare_periods"})
+        add("Değişim yayılmış; tek bir kaynak işaretlenmedi", {"compare_periods", "segment_by"})
     return items[:6]
 
 
@@ -207,12 +210,18 @@ def _evidence_ids(run: dict[str, Any], operations: set[str]) -> list[str]:
     ]
 
 
-def _change_sentence(change: float) -> str:
+def _change_sentence(change: float, run: dict[str, Any] | None = None) -> str:
+    metric = ""
+    for ev in (run or {}).get("evidence") or []:
+        if ev.get("operation") == "compare_periods":
+            metric = str((ev.get("value") or {}).get("metric") or "").lower()
+            break
+    noun = "Ücretler" if "fare" in metric else "Satışlar"
     if change < 0:
-        return f"Satışlar bu dönemde %{_fmt(abs(change))} azaldı."
+        return f"{noun} bu dönemde %{_fmt(abs(change))} azaldı."
     if change > 0:
-        return f"Satışlar bu dönemde %{_fmt(change)} arttı."
-    return "Satışlar bu dönemde belirgin değişmedi."
+        return f"{noun} bu dönemde %{_fmt(change)} arttı."
+    return f"{noun} bu dönemde belirgin değişmedi."
 
 
 def _driver_phrase(label: str) -> str:
@@ -392,11 +401,11 @@ def _limitations(run: dict[str, Any], evidence: list[dict[str, Any]], reviews: l
         "Rapor üreticisi yeni iddia oluşturmaz; yalnızca reviewer’dan geçen iddialar görünür.",
     ]
     if (run.get("decision") or "") == "abstain" or (run.get("stop_reason") or "") == "abstain":
-        notes.append("Yoğunlaşmış bir sürücü bu incelemede desteklenmiyor.")
+        notes.append("Tek bir bölge veya kategoride toplanmış bir değişim görünmüyor.")
     if run.get("stop_reason") == "budget" or run.get("insufficient_kind") == "budget":
         notes.append("Araştırma bütçesi daha güçlü bir sonuca ulaşmadan doldu.")
     if run.get("insufficient_kind") == "multiple_plausible_drivers":
-        notes.append("Birden fazla dilim sürücü eşiğini geçiyor.")
+        notes.append("Birden fazla dilim eşik değerini aşıyor.")
     cov = _first(evidence, "current_coverage")
     cov_val = (cov.get("value") or {}) if cov else {}
     if cov_val.get("truncated_current_period"):
@@ -419,7 +428,8 @@ def _recommended_next(run: dict[str, Any]) -> list[str]:
     if run.get("scope"):
         items.append("Kapsamı genişletip tüm tabloya dön.")
     if (run.get("decision") or "") == "abstain":
-        items.append("Mevcut yeteneklerle yanıtlanabilecek başka bir iş sorusu sor.")
+        items.append("Hangi bölge öne çıkıyor?")
+        items.append("Hangi kategori öne çıkıyor?")
     if not items:
         items.append("Detaylı raporu ve kanıt listesini gözden geçir.")
     return items[:6]

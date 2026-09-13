@@ -59,6 +59,73 @@ function formatDate(value) {
   );
 }
 
+function formatPct(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return "—";
+  const n = Number(value);
+  const sign = n > 0 ? "+" : "";
+  const text = Math.abs(n - Math.round(n)) < 1e-9 ? String(Math.round(n)) : n.toFixed(1).replace(".", ",");
+  return `${sign}${text}%`;
+}
+
+const DECISION_PLAIN = {
+  primary_driver: "Değişim bir yerde yoğunlaşıyor",
+  value_not_volume: "Sipariş sayısı değil, sepet tutarı",
+  data_artefact: "Eksik bir veri penceresi olabilir",
+  ranking: "Sıralama hazır",
+  association: "İlişki var; neden değil",
+  abstain: "Belirgin bir yoğunlaşma yok",
+};
+
+const CHART_PLAIN = {
+  trend: "Dönemler arası değişim",
+  contribution: "Hangi dilim değişime katkı verdi",
+  segment_comparison: "Dilim karşılaştırması",
+  metric_comparison: "Hacim ve sepet tutarı",
+  distribution: "Sıra dışı dönemler",
+};
+
+function plainDecision(run) {
+  const key = run?.decision || "";
+  if (DECISION_PLAIN[key]) return DECISION_PLAIN[key];
+  const label = run?.investigation_report?.decision_label;
+  if (label && !/sürücü|dilim destekleniyor/i.test(label)) return label;
+  return "İnceleme tamamlandı";
+}
+
+function plainDriver(run) {
+  const report = run.investigation_report || {};
+  const raw = report.driver_decomposition?.primary_driver_label || report.driver_decomposition?.primary_driver;
+  if (raw) return raw;
+  if ((run.decision || "") === "abstain") return "Tek bir bölge veya kategoride toplanmadı";
+  return "Henüz bir yoğunlaşma yok";
+}
+function kpisFrom(run) {
+  const report = run.investigation_report || {};
+  let change = null;
+  let volume = null;
+  let aov = null;
+  for (const ev of run.evidence || []) {
+    const val = ev.value || {};
+    if (ev.operation === "compare_periods" && val.change_pct != null) change = val.change_pct;
+    if (ev.operation === "decompose_volume_value") {
+      volume = val.volume_change_pct;
+      aov = val.aov_change_pct;
+    }
+  }
+  return {
+    decision: plainDecision(run),
+    change,
+    driver: plainDriver(run),
+    volume,
+    aov,
+    question: report.investigation_question || run.question || "",
+    limitation: String((report.limitations || [])[0] || "").replace(
+      "Yoğunlaşmış bir sürücü bu incelemede desteklenmiyor.",
+      "Bu incelemede tek bir bölge veya kategori öne çıkmadı."
+    ),
+  };
+}
+
 function renderRecent(runs) {
   const list = $("recent-list");
   list.replaceChildren();
@@ -77,7 +144,7 @@ function renderRecent(runs) {
     date.textContent = formatDate(run.created_at);
     const status = document.createElement("span");
     status.className = "recent-status";
-    status.textContent = run.status || "tamamlandı";
+    status.textContent = plainDecision(run);
     header.append(date, status);
     const title = document.createElement("strong");
     title.textContent = run.question || "Adsız inceleme";
@@ -86,37 +153,34 @@ function renderRecent(runs) {
   }
 }
 
-function chartTitle(chart, fallback) {
-  const title = chart.plotly?.layout?.title;
-  if (typeof title === "string") return title;
-  if (title && typeof title.text === "string") return title.text;
-  return chart.purpose || fallback;
+function friendlyChartTitle(chart, question) {
+  if (chart.purpose && CHART_PLAIN[chart.purpose]) return CHART_PLAIN[chart.purpose];
+  if (chart.title && !/[_]|fare_amount|sales eğilimi/i.test(chart.title)) return chart.title;
+  return question || "Kanıta bağlı grafik";
 }
 
-function renderCharts(runs) {
+function renderCharts(run) {
   const gallery = $("chart-gallery");
-  const candidates = [];
-  for (const run of runs) {
-    const reportCharts = run.investigation_report?.visualizations || [];
-    const charts = reportCharts.length ? reportCharts : run.charts || [];
-    for (const chart of charts) {
-      if (chart.plotly) candidates.push({ chart, run });
-    }
-  }
+  const reportCharts = run?.investigation_report?.visualizations || [];
+  const charts = reportCharts.length ? reportCharts : run?.charts || [];
+  const bound = charts.filter((chart) => chart.plotly);
   gallery.replaceChildren();
-  if (!candidates.length) {
+  if (!bound.length) {
     gallery.innerHTML =
-      '<div class="empty-state"><strong>Henüz görsel analiz yok</strong><p>Bir inceleme çalıştırdığınızda grafikler burada görünür.</p></div>';
+      '<div class="empty-state"><strong>Henüz grafik yok</strong><p>Bir iş sorusu sorduğunuzda dönem değişimi veya dilim karşılaştırması burada görünür.</p></div>';
     return;
   }
-  candidates.slice(0, 2).forEach(({ chart, run }, index) => {
+  bound.slice(0, 2).forEach((chart) => {
     const card = document.createElement("div");
     card.className = "chart-card";
     const title = document.createElement("h3");
-    title.textContent = chartTitle(chart, run.question || `Analiz ${index + 1}`);
+    title.textContent = friendlyChartTitle(chart, run.question);
+    const cap = document.createElement("p");
+    cap.className = "chart-cap";
+    cap.textContent = "Bu görsel son sorunuzun kanıtından üretildi. Ham tablodan sayı uydurulmaz.";
     const plot = document.createElement("div");
     plot.className = "chart";
-    card.append(title, plot);
+    card.append(title, cap, plot);
     gallery.appendChild(card);
     if (window.Plotly) {
       const figure = themedFigure(chart.plotly);
@@ -128,23 +192,25 @@ function renderCharts(runs) {
   });
 }
 
-function renderMetrics(runs) {
-  const findings = runs.reduce(
-    (total, run) => total + (run.investigation_report?.key_findings || run.claims || []).length,
-    0
-  );
-  const evidence = runs.reduce(
-    (total, run) => total + (run.investigation_report?.evidence || run.evidence || []).length,
-    0
-  );
-  const charts = runs.reduce(
-    (total, run) => total + (run.investigation_report?.visualizations || run.charts || []).length,
-    0
-  );
-  $("metric-runs").textContent = String(runs.length);
-  $("metric-findings").textContent = String(findings);
-  $("metric-evidence").textContent = String(evidence);
-  $("metric-charts").textContent = String(charts);
+function renderMetrics(run) {
+  const empty = !run;
+  const kpi = empty ? {} : kpisFrom(run);
+  $("kpi-decision").textContent = kpi.decision || "—";
+  $("kpi-change").textContent = empty ? "—" : formatPct(kpi.change);
+  $("kpi-driver").textContent = kpi.driver || "—";
+  if (kpi.volume == null && kpi.aov == null) {
+    $("kpi-volume").textContent = "—";
+  } else {
+    $("kpi-volume").textContent = `sipariş ${formatPct(kpi.volume)} · sepet ${formatPct(kpi.aov)}`;
+  }
+  const note = $("kpi-limitation");
+  if (!note) return;
+  if (empty) {
+    note.textContent = "Bu kartlar son sorduğunuz sorunun incelemesinden gelir. Henüz soru yoksa önce verini bağlayıp bir iş sorusu sorun.";
+    return;
+  }
+  const bits = [kpi.question, kpi.limitation].filter(Boolean);
+  note.textContent = bits.join(" — ");
 }
 
 async function loadDashboard() {
@@ -159,8 +225,14 @@ async function loadDashboard() {
       return runResponse.ok ? runResponse.json() : item;
     })
   );
-  renderMetrics(details);
-  renderCharts(details);
+  renderRecent(details);
+  const latest = details[0] || null;
+  renderMetrics(latest);
+  renderCharts(latest);
+  const workspace = $("workspace-name");
+  if (workspace && latest) {
+    workspace.textContent = latest.investigation_report?.title || "Evidra çalışma alanı";
+  }
 }
 
 document.addEventListener("DOMContentLoaded", loadDashboard);

@@ -277,7 +277,7 @@ wheels = [
 
 [[package]]
 name = "evidra"
-version = "0.2.0"
+version = "0.15.0"
 source = { editable = "." }
 dependencies = [
     { name = "duckdb" },

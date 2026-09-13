@@ -49,27 +49,25 @@ def _evidence_ids_from_claims(run: dict[str, Any]) -> list[str]:
 
 
 def _steps_text(run: dict[str, Any]) -> str:
+    report = run.get("investigation_report") or {}
+    readable = report.get("plan_readable") or []
+    if readable:
+        numbered = [f"{i}. {step}" for i, step in enumerate(readable, 1)]
+        return "İnceleme şöyle ilerledi:\n" + "\n".join(numbered)
     plan = run.get("plan") or []
-    steps = run.get("research_steps") or []
-    hyps = run.get("hypotheses") or []
-    lines = [f"Plan: {' → '.join(plan)}"]
-    if hyps:
-        first = hyps[0]
-        lines.append(f"İlk hipotez: {first.get('template_id')} ({first.get('status')})")
-    for step in steps:
-        lines.append(f"Next: {step.get('template_id')} — {step.get('reason')}")
-    if not steps:
-        lines.append("Adaptive follow-up yok; ilk tur yeterli sayıldı.")
-    return "\n".join(lines)
+    if plan:
+        return "İnceleme adımları: " + ", ".join(str(s) for s in plan)
+    return "Bu incelemede kayıtlı bir adım listesi yok."
 
 
 def _evidence_text(run: dict[str, Any]) -> str:
-    rows = []
-    for ev in (run.get("evidence") or [])[:12]:
-        rows.append(f"{ev.get('evidence_id')} · {ev.get('operation')} · {ev.get('strength')}")
-    if not rows:
-        return "Bu run'da evidence yok."
-    return "Evidence (son run):\n" + "\n".join(rows)
+    n = len(run.get("evidence") or [])
+    if not n:
+        return "Bu incelemede henüz kanıt yok."
+    return (
+        f"Bu incelemede {n} kanıt kaydı var. "
+        "Sayılar ve grafikler detaylı raporda; sohbette ham kanıt kimliği dökülmez."
+    )
 
 
 def default_investigate(
@@ -227,8 +225,8 @@ def handle_message(
             extra["report_url"] = f"/report?run={usable['id']}"
         return _assistant(
             text=(
-                "Detaylı rapor mevcut investigation state’ten üretildi; yeni claim yok. "
-                "Chat kısa kalır; rapor evidence, plan, reviewer ve grafikleri taşır."
+                "Detaylı rapor hazır. Özet, bulgular, grafikler ve sınırlamalar orada; "
+                "sohbet kısa kalır."
             ),
             intent=intent,
             last_run=usable,
