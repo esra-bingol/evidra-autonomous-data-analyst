@@ -27,7 +27,12 @@ QUESTION → CAPABILITIES → HYPOTHESES → EXPERIMENTS
 The language model (or a deterministic policy) decides **what to look at**. Python, SQL, and statistics compute. Evidence is the engine’s return type. The model is not the source of truth.
 
 V1 report language is **association**, not causation. Strength is `weak | moderate | strong | inconclusive`. A fabricated “89% confidence” is never emitted.
-<img width="1440" height="809" alt="Ekran Resmi 2026-09-18 22 35 50" src="https://github.com/user-attachments/assets/8f47068a-851a-41b1-a188-af54f5e31c85" />
+
+
+
+https://github.com/user-attachments/assets/f920e036-2124-4a50-86a2-0a027a9f807a
+
+
 
 ---
 
