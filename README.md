@@ -7,7 +7,8 @@ Repository: `evidra-autonomous-data-analyst`
 Evidra is not a chatbot that turns a CSV or Excel table into a fluent story. A business question is treated as a research problem: column roles are inferred, capabilities are intersected with the question, closed hypothesis templates are tested, every number is bound to an evidence object, and any sentence that cannot be bound is not published.
 
 <!-- Image: product logo or overview frame -->
-<!-- ![Evidra overview](docs/screenshots/04-dashboard.png) -->
+<img width="1440" height="809" alt="Dashboard" src="https://github.com/user-attachments/assets/a71aff18-8424-43b8-8f58-f027137180a1" />
+
 
 ---
 
@@ -26,6 +27,7 @@ QUESTION → CAPABILITIES → HYPOTHESES → EXPERIMENTS
 The language model (or a deterministic policy) decides **what to look at**. Python, SQL, and statistics compute. Evidence is the engine’s return type. The model is not the source of truth.
 
 V1 report language is **association**, not causation. Strength is `weak | moderate | strong | inconclusive`. A fabricated “89% confidence” is never emitted.
+<img width="1440" height="809" alt="Ekran Resmi 2026-09-18 22 35 50" src="https://github.com/user-attachments/assets/8f47068a-851a-41b1-a188-af54f5e31c85" />
 
 ---
 
@@ -130,13 +132,16 @@ Optional: `EVIDRA_PORT` (default `8765`).
 **Overview (`/dashboard`)**  
 Latest-run KPIs, evidence-bound charts, a sortable slice table, past reports, and a system summary. This is an analyst home screen, not a landing page.
 
-<!-- ![Overview](docs/screenshots/04-dashboard.png) -->
+<img width="1440" height="809" alt="Main Dashboard" src="https://github.com/user-attachments/assets/10601dab-f2d5-4ec1-9fb5-84805f3091ed" />
+
 
 **Analysis chat (`/chat`)**  
 Bind a dataset (sample fixture or CSV/Excel) and ask a business question. The answer is analyst prose: previous → current amount, concentrated slice, volume/basket reading. The right panel shows the workflow, KPIs, and a chart; each message has a time and status line.
 
-<!-- ![Chat question and answer](docs/screenshots/01-chat-question.png) -->
-<!-- ![Chat side panel](docs/screenshots/02-chat-preview.png) -->
+<img width="1440" height="809" alt="Chat Review" src="https://github.com/user-attachments/assets/7c305ad2-7cd5-43ab-87bc-deff9c0a93f7" />
+
+<img width="1440" height="809" alt="Chat Board" src="https://github.com/user-attachments/assets/ee0afdcf-e852-4a91-84e6-e3a47d075012" />
+
 
 **Investigation console (`/console`)**  
 Four steps: dataset → business question → how it was examined → result (KPIs, charts, slice table). Tool traces, evidence IDs, and review records sit in a foldable technical section.
@@ -144,7 +149,11 @@ Four steps: dataset → business question → how it was examined → result (KP
 **Detailed report (`/report`)**  
 The same summary as chat, plus a KPI strip, charts, headline findings, next questions, a slice table, and “what this report does not claim.” Engine jargon stays in the appendix.
 
-<!-- ![Investigation report](docs/screenshots/03-report.png) -->
+<img width="1440" height="809" alt="Report" src="https://github.com/user-attachments/assets/9937e6f2-93b2-4964-970f-7111b18600e4" />
+
+<img width="1440" height="809" alt="KPI Screen" src="https://github.com/user-attachments/assets/2838cb9c-9638-462b-ad06-cf8067860541" />
+
+
 
 ### Example questions
 
@@ -159,7 +168,6 @@ The same summary as chat, plus a KPI strip, charts, headline findings, next ques
 | Superstore (local) | Hangi bölge öne çıkıyor? | Ranking; Region first |
 | Delivery / churn | Teslimat gecikmesi puanı nasıl etkiler? | Abstain if the capability is missing |
 
-<!-- ![Abstain answer](docs/screenshots/05-abstain.png) -->
 
 The product UI is Turkish; the questions above are the ones the surfaces actually ask.
 
