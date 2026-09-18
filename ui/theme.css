@@ -267,3 +267,75 @@ input:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+html.gated,
+html.gated body {
+  overflow: hidden;
+}
+
+.gate {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: rgba(36, 27, 40, 0.72);
+}
+
+.gate-card {
+  width: min(22rem, 100%);
+  padding: 1.25rem 1.3rem 1.15rem;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  background: var(--color-surface);
+  box-shadow: 0 18px 50px rgba(33, 28, 38, 0.28);
+}
+
+.gate-kicker {
+  margin: 0 0 0.35rem;
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gate-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 1.05rem;
+}
+
+.gate-card p {
+  margin: 0 0 0.85rem;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.gate-card input {
+  width: 100%;
+  min-height: 2.4rem;
+  margin-bottom: 0.65rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 0.6rem;
+}
+
+.gate-card button {
+  width: 100%;
+  min-height: 2.4rem;
+  border: 0;
+  border-radius: 0.6rem;
+  background: var(--color-accent);
+  color: #fff;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.gate-error {
+  margin: 0.65rem 0 0;
+  color: var(--color-error);
+  font-size: 0.8rem;
+}

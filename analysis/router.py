@@ -8,6 +8,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from analysis.heuristic import required_capabilities
+from analysis.segments import SLICE_METRIC_KEYS
 
 INTENTS = (
     "empty",
@@ -116,7 +117,7 @@ def known_labels(run: dict[str, Any] | None) -> list[str]:
             continue
         for row in (ev.get("value") or {}).get("rows") or []:
             for key, val in row.items():
-                if key in {"previous", "current", "change", "share_of_change"}:
+                if key in SLICE_METRIC_KEYS:
                     continue
                 text = str(val).strip()
                 if text and text not in labels:

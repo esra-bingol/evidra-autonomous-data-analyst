@@ -6,12 +6,13 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from analysis.access import COOKIE, bind_host, bind_port, gate_middleware, required as access_required, status_payload, token_matches
 from analysis.chat import handle_message
 from analysis.report import build_investigation_report
 from analysis import store
@@ -34,7 +35,6 @@ from analysis.tools.runtime import inspect_dataset
 ROOT = Path(__file__).resolve().parents[1]
 UI_DIR = ROOT / "ui"
 UPLOAD_DIR = ROOT / "data" / "processed" / "uploads"
-PORT = 8765
 
 _FIXTURE_FILES = {
     "clear_driver": ROOT / "data" / "fixtures" / "clear_driver.csv",
@@ -87,6 +87,10 @@ class ChatMessageBody(BaseModel):
 
 class ChatCreateBody(BaseModel):
     dataset_id: str
+
+
+class UnlockBody(BaseModel):
+    token: str = ""
 
 
 def catalog() -> list[dict[str, Any]]:
@@ -181,10 +185,35 @@ def _load_chat(chat_id: str) -> dict[str, Any] | None:
 
 def create_app() -> FastAPI:
     app = FastAPI(title="Evidra", version="0.15.0")
+    app.middleware("http")(gate_middleware)
 
     @app.get("/health")
     def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/auth/status")
+    def auth_status(request: Request) -> dict[str, bool]:
+        return status_payload(request)
+
+    @app.post("/auth/unlock")
+    def auth_unlock(body: UnlockBody, response: Response) -> dict[str, bool]:
+        if not access_required():
+            return {"ok": True, "required": False}
+        if not token_matches(body.token):
+            raise HTTPException(401, "invalid token")
+        response.set_cookie(
+            COOKIE,
+            body.token.strip(),
+            httponly=True,
+            samesite="lax",
+            max_age=14 * 24 * 60 * 60,
+        )
+        return {"ok": True, "required": True}
+
+    @app.post("/auth/lock")
+    def auth_lock(response: Response) -> dict[str, bool]:
+        response.delete_cookie(COOKIE)
+        return {"ok": True}
 
     @app.get("/fixtures")
     def list_fixtures() -> dict[str, Any]:
@@ -472,7 +501,12 @@ app = create_app()
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("analysis.api:app", host="127.0.0.1", port=PORT, reload=True)
+    uvicorn.run(
+        "analysis.api:app",
+        host=bind_host(),
+        port=bind_port(),
+        reload=True,
+    )
 
 
 if __name__ == "__main__":

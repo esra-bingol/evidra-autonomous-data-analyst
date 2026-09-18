@@ -29,8 +29,6 @@ def detect_intent(question: str) -> str:
             "hangi kategori",
             "hangi segment",
             "hangi dilim",
-            "hangi kırılım",
-            "hangi kirilim",
             "hangi ülke",
             "toplanıyor",
             "toplaniyor",

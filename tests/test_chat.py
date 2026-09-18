@@ -166,7 +166,8 @@ def test_why_change_then_volume_slice_answers_differ():
     assert follow["intent"] == "answer_from_evidence"
     assert follow["text"] != first["text"]
     assert "dağılmış" not in follow["text"]
-    assert "adet kırılımı" in follow["text"].lower() or "en büyük pay" in follow["text"].lower()
+    assert "sipariş" in follow["text"].lower()
+    assert "adet kırılımı dilim dilim hesaplanmadı" not in follow["text"].lower()
 
 
 def test_missing_capability_does_not_run_engine():

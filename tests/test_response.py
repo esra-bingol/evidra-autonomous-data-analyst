@@ -189,6 +189,85 @@ def test_abstain_volume_followup_is_not_the_same_essay():
     assert "adet kırılımı" in follow.answer.lower()
 
 
+def test_volume_followup_uses_order_count_share_when_present():
+    run = {
+        "decision": "abstain",
+        "question": "Satış neden değişti?",
+        "claims": [],
+        "reviews": [],
+        "evidence": [
+            {
+                "evidence_id": "ev-vol",
+                "operation": "decompose_volume_value",
+                "value": {"volume_change_pct": -14.18, "aov_change_pct": -17.54},
+            },
+            {
+                "evidence_id": "ev-seg",
+                "operation": "segment_by",
+                "filters": {"dimensions": ["region"]},
+                "value": {
+                    "rows": [
+                        {
+                            "region": "West",
+                            "previous": 50000.0,
+                            "current": 20000.0,
+                            "change": -30000.0,
+                            "share_of_change": 0.42,
+                            "volume_previous": 100.0,
+                            "volume_current": 40.0,
+                            "volume_change": -60.0,
+                            "volume_share_of_change": 0.61,
+                        }
+                    ]
+                },
+            },
+        ],
+    }
+    follow = compose_followup(run, "Sipariş sayısındaki düşüş hangi dilimde toplanıyor?")
+    assert "west" in follow.answer.lower()
+    assert "adet kırılımı dilim dilim hesaplanmadı" not in follow.answer
+    assert "sipariş adedi" in follow.answer.lower() or "en büyük pay" in follow.answer.lower()
+    ok, reasons = validate_response(follow, run)
+    assert ok, reasons
+
+
+def test_abstain_names_large_one_dim_share():
+    run = {
+        "decision": "abstain",
+        "claims": [],
+        "reviews": [],
+        "evidence": [
+            {
+                "evidence_id": "ev-cmp",
+                "operation": "compare_periods",
+                "value": {"change_pct": -29.23, "previous": 118448.0, "current": 83829.0},
+            },
+            {
+                "evidence_id": "ev-seg",
+                "operation": "segment_by",
+                "filters": {"dimensions": ["region"]},
+                "value": {
+                    "rows": [
+                        {
+                            "region": "East",
+                            "previous": 80000.0,
+                            "current": 20000.0,
+                            "change": -60000.0,
+                            "share_of_change": 0.738,
+                        }
+                    ]
+                },
+            },
+        ],
+    }
+    first = compose_response(run)
+    assert "east" in first.answer.lower()
+    assert "dağılmış" not in first.answer
+    assert "işaretlenmedi" in first.answer
+    ok, reasons = validate_response(first, run)
+    assert ok, reasons
+
+
 def test_no_signal_ranking_followup_is_not_the_why_essay():
     run = run_investigation(FIXTURES / "no_signal.csv", "Satış neden değişti?")
     first = compose_response(run)

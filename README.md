@@ -102,7 +102,7 @@ Core packages: pandas, numpy, scipy, plotly, openpyxl, pydantic, duckdb, langgra
 uv run python -m analysis.api
 ```
 
-Local, no auth. Port **8765**.
+Local by default: **127.0.0.1:8765**, no login. This is still a single-operator investigation engine, not a multi-tenant SaaS.
 
 - Overview: `http://127.0.0.1:8765/dashboard`
 - Analysis chat: `http://127.0.0.1:8765/chat`
@@ -110,6 +110,16 @@ Local, no auth. Port **8765**.
 - Detailed report: `http://127.0.0.1:8765/report?run={id}`
 
 Quick scene: `http://127.0.0.1:8765/chat?fixture=clear_driver`
+
+To share the process on a network or a VPS, set a shared access token (and bind beyond loopback only when that token is set):
+
+```bash
+EVIDRA_HOST=0.0.0.0 EVIDRA_ACCESS_TOKEN=choose-a-long-secret uv run python -m analysis.api
+```
+
+The UI then asks for the token once and stores it in an HTTP-only cookie. `GET /health` stays open. There is no user table, OAuth, or per-tenant isolation.
+
+Optional: `EVIDRA_PORT` (default `8765`).
 
 ---
 

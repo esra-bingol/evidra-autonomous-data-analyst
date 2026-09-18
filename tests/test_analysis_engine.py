@@ -48,6 +48,8 @@ def test_clear_driver_interaction_uses_expected_cell():
     assert top["region"] == exp["driver_region"]
     assert top["category"] == exp["driver_category"]
     assert top["share_of_change"] >= 0.9
+    assert "volume_share_of_change" in top
+    assert top["volume_previous"] >= 0
 
 
 def test_engine_does_not_hardcode_driver_labels():
