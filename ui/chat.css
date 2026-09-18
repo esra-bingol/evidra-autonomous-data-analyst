@@ -160,34 +160,75 @@ textarea:focus-visible {
 
 .rail-card {
   margin-top: auto;
-  padding: var(--space-4);
-  border-radius: var(--radius-lg);
+  padding: 0.85rem 0.85rem 0.9rem;
+  border-radius: var(--radius-md);
 }
 
-.rail-card h2 {
-  margin: 0 0 var(--space-3);
-  font-size: var(--font-size-md);
-}
-
-.rail-card label {
-  display: block;
-  margin: 0 0 var(--space-2);
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-}
-
-.rail-card input[type="file"] {
-  width: 100%;
-  margin: 0 0 var(--space-2);
-  font-size: var(--font-size-sm);
+.dataset-kicker {
+  margin: 0 0 0.45rem;
+  color: var(--color-sidebar-muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .rail-card select {
   width: 100%;
-  min-height: var(--control-height);
-  margin-bottom: var(--space-2);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-md);
+  min-height: 2rem;
+  margin: 0;
+  padding: 0 1.6rem 0 0.65rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dataset-card .btn-primary {
+  min-height: 2rem;
+  margin-top: 0.45rem;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.file-pick {
+  width: 100%;
+  min-height: 2.4rem;
+  margin: 0.5rem 0 0;
+  padding: 0.4rem 0.55rem;
+  display: grid;
+  place-content: center;
+  gap: 0.05rem;
+  border: 1px dashed rgba(215, 182, 223, 0.45);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  color: #e4c6ec;
+  text-align: center;
+  cursor: pointer;
+}
+
+.file-pick span {
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.file-pick small {
+  color: var(--color-sidebar-muted);
+  font-size: 0.6rem;
+  font-weight: 500;
+}
+
+.file-pick:hover {
+  border-color: #d7b6df;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-sidebar-text);
+}
+
+.rail-card .meta {
+  margin: 0.4rem 0 0;
+  font-size: 0.65rem;
+  line-height: 1.4;
 }
 
 .btn-primary {

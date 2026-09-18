@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -9,6 +10,8 @@ from analysis.api import app, reset_store
 from analysis.chat import classify_turn
 from analysis.router import CAUSAL_LIMIT
 from analysis.tools.schemas import V1_TOOLS
+
+SUPERSTORE = Path(__file__).resolve().parents[1] / "data" / "raw" / "superstore.csv"
 
 
 @pytest.fixture(autouse=True)
@@ -140,6 +143,30 @@ def test_first_ranking_questions_are_not_generic_abstain():
     assert answers[0] != answers[1]
     assert "kategori" in answers[0].lower()
     assert "bölge" in answers[1].lower()
+
+
+def test_why_change_then_volume_slice_answers_differ():
+    if not SUPERSTORE.exists():
+        pytest.skip("superstore.csv is local-only")
+    client = TestClient(app)
+    with SUPERSTORE.open("rb") as fh:
+        ds = client.post("/datasets", files={"file": ("superstore.csv", fh, "text/csv")}).json()
+    assert ds.get("source") == "upload"
+    chat = client.post("/chats", json={"dataset_id": ds["id"]}).json()
+    first = client.post(
+        f"/chats/{chat['id']}/messages",
+        json={"text": "Satış neden değişti?"},
+    ).json()["message"]
+    follow = client.post(
+        f"/chats/{chat['id']}/messages",
+        json={"text": "Sipariş sayısındaki düşüş hangi dilimde toplanıyor?"},
+    ).json()["message"]
+    assert first["ran_investigation"] is True
+    assert follow["ran_investigation"] is False
+    assert follow["intent"] == "answer_from_evidence"
+    assert follow["text"] != first["text"]
+    assert "dağılmış" not in follow["text"]
+    assert "adet kırılımı" in follow["text"].lower() or "en büyük pay" in follow["text"].lower()
 
 
 def test_missing_capability_does_not_run_engine():

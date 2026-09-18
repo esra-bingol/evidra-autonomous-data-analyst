@@ -7,6 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from analysis.investigate import DRIVER_SHARE_MIN
 from analysis.evidence.validator import _CAUSAL, _FAKE_CONFIDENCE, _numbers_supported, _walk_numbers
 from analysis.router import CAUSAL_LIMIT, is_causal_probe, is_ranking_question, mentioned_labels
 from analysis.scope import scope_lead
@@ -58,7 +59,7 @@ def compose_followup(run: dict[str, Any], message: str) -> ResponseContract:
     if is_causal_probe(message):
         draft = _causal_limit_contract(run)
     elif is_ranking_question(message):
-        draft = _ranking_contract(run, message)
+        return _compose_ranking_followup(run, message)
     else:
         labels = mentioned_labels(message, run)
         if labels:
@@ -70,6 +71,27 @@ def compose_followup(run: dict[str, Any], message: str) -> ResponseContract:
     if ok:
         return draft
     return compose_response(run)
+
+
+def _compose_ranking_followup(run: dict[str, Any], message: str) -> ResponseContract:
+    """Ranking follow-ups stay ranking-shaped; they never replay the why-change essay."""
+    draft = _ranking_contract(run, message)
+    ok, _reasons = validate_response(draft, run)
+    if ok:
+        return draft
+    fallback = _ranking_unavailable(run, message)
+    ok_fb, _ = validate_response(fallback, run)
+    if ok_fb:
+        return fallback
+    return ResponseContract(
+        answer=(
+            "Bu soruya karşılık gelecek bir dilim sıralaması mevcut kanıtta yok. "
+            "Belirli bir bölge veya kategori adı sorarsanız ona bakabilirim."
+        ),
+        key_findings=["Dilim sıralaması mevcut kanıtta yok."],
+        limitations=[CAUSAL_LIMIT],
+        suggested_followups=["Hangi bölge öne çıkıyor?", "Detaylı raporu göster."],
+    )
 
 
 def compose_scoped(run: dict[str, Any], scope: dict[str, str]) -> ResponseContract:
@@ -115,18 +137,33 @@ def _causal_answer(run: dict[str, Any]) -> str:
 def _ranking_contract(run: dict[str, Any], message: str) -> ResponseContract:
     field = _ranking_field(message)
     mode = _ranking_mode(message)
-    row, eid = _ranking_row(run, field, mode)
-    if not row:
-        return _compose_unchecked(run)
-    label = str(_row_value(row, field) or _row_label(row))
+    leaders = _ranking_leaders(run, field, mode)
+    if not leaders:
+        return _ranking_unavailable(run, message)
+    row, eid, dim = leaders[0]
+    label = str(_row_value(row, field or dim) or _row_label(row))
     share_pct = _share_as_percent(row.get("share_of_change"))
+    abstain = (run.get("decision") or "") == "abstain" or run.get("stop_reason") == "abstain"
+    volume_q = _asks_volume(message)
+    vol = _volume_value(run)
     if mode == "top_current":
         current = _amount(float(row["current"])) if row.get("current") is not None else None
-        noun = "kategori" if field == "category" else "bölge" if field == "region" else "dilim"
+        noun = _field_noun(field)
         lead = f"Mevcut dönemde en yüksek {noun} {label}"
         if current:
             lead += f" ({current})"
         lead += "."
+    elif not field:
+        lead = _spread_ranking_lead(leaders, abstain=abstain)
+    elif abstain:
+        lead = f"Kırılımlar içinde en büyük pay {_driver_phrase(label)} diliminde."
+        if share_pct is not None:
+            lead = (
+                f"Kırılımlar içinde en büyük pay {_driver_phrase(label)} diliminde; "
+                f"toplam değişimin %{_fmt(share_pct)} kadarı buradan geliyor."
+            )
+        if _share_below_threshold(row.get("share_of_change")):
+            lead += " Bu pay tek kaynak sayılacak eşiği geçmediği için ayrı işaretlenmedi."
     elif field == "category":
         lead = f"Mevcut incelemede en olumsuz kategori {label}."
     elif field == "region":
@@ -134,20 +171,133 @@ def _ranking_contract(run: dict[str, Any], message: str) -> ResponseContract:
     else:
         lead = f"Mevcut incelemede öne çıkan dilim {_driver_phrase(label)}."
     parts = [lead]
-    findings = [lead]
-    movement = _row_movement(row)
-    if movement:
-        parts.append(movement)
-    if share_pct is not None and mode != "top_current":
-        parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)} kadarını oluşturuyor.")
-        findings.append(f"Katkı payı %{_fmt(share_pct)}.")
+    findings = [lead.split(" Bu pay")[0].rstrip(".") + "."]
+    if volume_q:
+        volume = vol.get("volume_change_pct")
+        if volume is not None:
+            parts.insert(0, f"Sipariş sayısı toplamda {_signed_pct(float(volume))}.")
+            findings.append(f"Sipariş sayısı {_signed_pct(float(volume))}.")
+        parts.append(
+            "Adet kırılımı dilim dilim hesaplanmadı; yukarıdaki pay satış/metrik değişiminden geliyor."
+        )
+    elif not abstain:
+        movement = _row_movement(row)
+        if movement:
+            parts.append(movement)
+        if share_pct is not None and mode != "top_current" and field:
+            parts.append(f"Bu dilim toplam değişimin %{_fmt(share_pct)} kadarını oluşturuyor.")
+            findings.append(f"Katkı payı %{_fmt(share_pct)}.")
+    elif share_pct is None and field:
+        movement = _row_movement(row)
+        if movement:
+            parts.append(movement)
+    refs = [item[1] for item in leaders if item[1]]
     return ResponseContract(
         answer=" ".join(parts),
-        key_findings=findings,
-        evidence_refs=_uniq([eid] if eid else _evidence_ids(run, {"segment_by"})),
+        key_findings=findings[:4],
+        evidence_refs=_uniq(refs or _evidence_ids(run, {"segment_by", "decompose_volume_value"})),
         limitations=[CAUSAL_LIMIT],
         suggested_followups=["Detaylı raporu göster."],
     )
+
+
+def _ranking_unavailable(run: dict[str, Any], message: str) -> ResponseContract:
+    vol = _volume_value(run)
+    parts: list[str] = []
+    if _asks_volume(message) and vol.get("volume_change_pct") is not None:
+        parts.append(f"Sipariş sayısı toplamda {_signed_pct(float(vol['volume_change_pct']))}.")
+        parts.append("Bu düşüşün hangi dilimde toplandığı dilim dilim adet olarak hesaplanmadı.")
+    else:
+        parts.append("Bu soruya karşılık gelecek bir dilim sıralaması mevcut kanıtta yok.")
+    parts.append("Belirli bir bölge veya kategori adı sorarsanız ona bakabilirim.")
+    return ResponseContract(
+        answer=" ".join(parts),
+        key_findings=parts[:1],
+        evidence_refs=_uniq(_evidence_ids(run, {"segment_by", "decompose_volume_value", "compare_periods"})),
+        limitations=[CAUSAL_LIMIT],
+        suggested_followups=["Hangi bölge öne çıkıyor?", "Detaylı raporu göster."],
+    )
+
+
+def _asks_volume(message: str) -> bool:
+    t = message.lower()
+    return any(
+        tok in t
+        for tok in ("sipariş sayısı", "siparis sayisi", "sipariş sayıs", "adet", "volume", "hacim")
+    )
+
+
+def _field_noun(field: str | None) -> str:
+    key = (field or "").strip().lower().replace(" ", "_")
+    return {
+        "category": "kategori",
+        "region": "bölge",
+        "city": "şehir",
+        "state": "eyalet",
+        "segment": "segment",
+        "ship_mode": "teslimat türü",
+        "ship mode": "teslimat türü",
+    }.get(key or (field or "").strip().lower(), "dilim")
+
+
+def _dim_noun(dim: str | None) -> str:
+    noun = _field_noun(dim)
+    if noun != "dilim":
+        return noun
+    text = (dim or "").strip()
+    return text or "dilim"
+
+
+def _spread_ranking_lead(
+    leaders: list[tuple[dict[str, Any], str | None, str | None]],
+    *,
+    abstain: bool,
+) -> str:
+    bits: list[str] = []
+    for row, _eid, dim in leaders:
+        label = str(_row_value(row, dim) or _row_label(row))
+        share_pct = _share_as_percent(row.get("share_of_change"))
+        noun = _dim_noun(dim)
+        if share_pct is not None:
+            bits.append(f"{label} ({noun}, %{_fmt(share_pct)})")
+        else:
+            bits.append(f"{label} ({noun})")
+    if not bits:
+        return "Kırılımlar içinde öne çıkan bir dilim yok."
+    if len(bits) == 1:
+        lead = f"Kırılımlar içinde en büyük pay {bits[0]}."
+    else:
+        lead = "Satış değişiminde en büyük paylar " + "; ".join(bits) + "."
+    if abstain and _leaders_below_threshold(leaders):
+        word = "Bu pay" if len(bits) == 1 else "Bu paylar"
+        lead += f" {word} tek kaynak sayılacak eşiği geçmediği için ayrı işaretlenmedi."
+    return lead
+
+
+def _share_below_threshold(share: Any) -> bool:
+    frac = _share_fraction(share)
+    if frac is None:
+        return True
+    return frac < DRIVER_SHARE_MIN
+
+
+def _share_fraction(share: Any) -> float | None:
+    if share is None:
+        return None
+    mag = abs(float(share))
+    if mag > 1.5:
+        mag = mag / 100.0
+    return mag
+
+
+def _leaders_below_threshold(
+    leaders: list[tuple[dict[str, Any], str | None, str | None]],
+) -> bool:
+    known = [_share_fraction(row.get("share_of_change")) for row, _eid, _dim in leaders]
+    fracs = [v for v in known if v is not None]
+    if not fracs:
+        return True
+    return max(fracs) < DRIVER_SHARE_MIN
 
 
 def _slice_contract(run: dict[str, Any], labels: list[str]) -> ResponseContract:
@@ -188,6 +338,12 @@ def _ranking_field(message: str) -> str | None:
         return "category"
     if "bölge" in t or "bolge" in t or "region" in t:
         return "region"
+    if "şehir" in t or "sehir" in t or "city" in t:
+        return "city"
+    if "eyalet" in t or ("state" in t and "statement" not in t):
+        return "state"
+    if "segment" in t:
+        return "segment"
     return None
 
 
@@ -205,12 +361,39 @@ def _segment_entries(run: dict[str, Any]) -> list[tuple[dict[str, Any], str | No
 
 def _ranking_mode(message: str) -> str:
     t = message.lower()
-    if any(tok in t for tok in ("popüler", "populer", "öne çık", "one cik", "en yüksek", "top")):
+    if any(tok in t for tok in ("popüler", "populer", "öne çık", "one cik", "en yüksek")):
+        return "top_current"
+    if re.search(r"\btop\b", t):
         return "top_current"
     return "worst_change"
 
 
 def _ranking_row(run: dict[str, Any], field: str | None, mode: str) -> tuple[dict[str, Any] | None, str | None]:
+    leaders = _ranking_leaders(run, field, mode, limit=1)
+    if not leaders:
+        return None, None
+    row, eid, _dim = leaders[0]
+    return row, eid
+
+
+def _ranking_score(row: dict[str, Any], mode: str) -> float:
+    if mode == "top_current":
+        return float(row.get("current") or 0)
+    share = row.get("share_of_change")
+    if share is not None:
+        return abs(float(share))
+    change = row.get("change")
+    if change is not None:
+        return -float(change)
+    return 0.0
+
+
+def _ranking_leaders(
+    run: dict[str, Any],
+    field: str | None,
+    mode: str,
+    limit: int = 3,
+) -> list[tuple[dict[str, Any], str | None, str | None]]:
     rows: list[tuple[dict[str, Any], str | None, list[str]]] = []
     for row, eid, dims in _segment_entries(run):
         if field and _row_key(row, field) is None:
@@ -221,16 +404,53 @@ def _ranking_row(run: dict[str, Any], field: str | None, mode: str) -> tuple[dic
         if exact:
             rows = exact
     if not rows:
-        return None, None
+        return []
     if mode == "top_current":
-        usable = [(row, eid) for row, eid, _dims in rows if row.get("current") is not None]
-        if not usable:
-            return None, None
-        return max(usable, key=lambda item: float(item[0].get("current") or 0))
-    usable = [(row, eid) for row, eid, _dims in rows if row.get("change") is not None]
+        ranked = [(row, eid, dims) for row, eid, dims in rows if row.get("current") is not None]
+        ranked.sort(key=lambda item: float(item[0].get("current") or 0), reverse=True)
+        if field:
+            return [(row, eid, (dims[0] if dims else field)) for row, eid, dims in ranked[:1]]
+        return _unique_dim_leaders(ranked, limit)
+    if not field:
+        onedim = [(row, eid, dims) for row, eid, dims in rows if len(dims) == 1]
+        pool = onedim or rows
+        with_share = [item for item in pool if item[0].get("share_of_change") is not None]
+        ranked = with_share or [item for item in pool if item[0].get("change") is not None]
+        ranked.sort(key=lambda item: _ranking_score(item[0], mode), reverse=True)
+        return _unique_dim_leaders(ranked, limit)
+    usable = [(row, eid, dims) for row, eid, dims in rows if row.get("change") is not None]
     if not usable:
-        return None, None
-    return min(usable, key=lambda item: float(item[0].get("change") or 0))
+        return []
+    usable.sort(key=lambda item: float(item[0].get("change") or 0))
+    dim = usable[0][2][0] if usable[0][2] else field
+    return [(usable[0][0], usable[0][1], dim)]
+
+
+def _unique_dim_leaders(
+    ranked: list[tuple[dict[str, Any], str | None, list[str]]],
+    limit: int,
+) -> list[tuple[dict[str, Any], str | None, str | None]]:
+    dims = {str(dims[0]).lower() for _row, _eid, dims in ranked if dims}
+    if len(dims) <= 1:
+        out: list[tuple[dict[str, Any], str | None, str | None]] = []
+        for row, eid, dims in ranked:
+            out.append((row, eid, dims[0] if dims else None))
+            if len(out) >= limit:
+                break
+        return out
+    seen: set[str] = set()
+    leaders: list[tuple[dict[str, Any], str | None, str | None]] = []
+    for row, eid, dims in ranked:
+        if not dims:
+            continue
+        key = str(dims[0]).strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        leaders.append((row, eid, dims[0]))
+        if len(leaders) >= limit:
+            break
+    return leaders
 
 
 def _row_key(row: dict[str, Any], wanted: str | None) -> str | None:
@@ -272,7 +492,7 @@ def _matching_row(run: dict[str, Any], labels: list[str]) -> tuple[dict[str, Any
 def _row_label(row: dict[str, Any]) -> str:
     parts = [
         str(row[k])
-        for k in ("region", "category", "segment", "country")
+        for k in ("region", "category", "segment", "country", "city", "state")
         if row.get(k)
     ]
     if len(parts) >= 2:

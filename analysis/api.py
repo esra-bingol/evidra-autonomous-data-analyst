@@ -472,7 +472,7 @@ app = create_app()
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("analysis.api:app", host="127.0.0.1", port=PORT, reload=False)
+    uvicorn.run("analysis.api:app", host="127.0.0.1", port=PORT, reload=True)
 
 
 if __name__ == "__main__":

@@ -133,6 +133,74 @@ def test_followup_ranking_and_slice_stay_grounded():
     assert ok, reasons
 
 
+def test_abstain_volume_followup_is_not_the_same_essay():
+    run = {
+        "decision": "abstain",
+        "question": "Satış neden değişti?",
+        "claims": [],
+        "reviews": [],
+        "evidence": [
+            {
+                "evidence_id": "ev-cmp",
+                "operation": "compare_periods",
+                "value": {"change_pct": -29.23, "previous": 118448.0, "current": 83829.0},
+            },
+            {
+                "evidence_id": "ev-vol",
+                "operation": "decompose_volume_value",
+                "value": {"volume_change_pct": -14.18, "aov_change_pct": -17.54},
+            },
+            {
+                "evidence_id": "ev-seg",
+                "operation": "segment_by",
+                "filters": {"dimensions": ["region"]},
+                "value": {
+                    "rows": [
+                        {
+                            "region": "West",
+                            "previous": 50000.0,
+                            "current": 20000.0,
+                            "change": -30000.0,
+                            "share_of_change": 0.42,
+                        },
+                        {
+                            "region": "East",
+                            "previous": 40000.0,
+                            "current": 30000.0,
+                            "change": -10000.0,
+                            "share_of_change": 0.14,
+                        },
+                    ]
+                },
+            },
+        ],
+    }
+    first = compose_response(run)
+    follow = compose_followup(run, "Sipariş sayısındaki düşüş hangi dilimde toplanıyor?")
+    assert follow.answer != first.answer
+    assert "dağılmış" in first.answer or "işaretlenmedi" in first.answer
+    assert "west" in follow.answer.lower()
+    assert "en büyük pay" in follow.answer.lower()
+    assert "dağılmış" not in follow.answer
+    assert "en yüksek dilim" not in follow.answer.lower()
+    ok, reasons = validate_response(follow, run)
+    assert ok, reasons
+    assert "sipariş sayısı" in follow.answer.lower()
+    assert "adet kırılımı" in follow.answer.lower()
+
+
+def test_no_signal_ranking_followup_is_not_the_why_essay():
+    run = run_investigation(FIXTURES / "no_signal.csv", "Satış neden değişti?")
+    first = compose_response(run)
+    follow = compose_followup(run, "Sipariş sayısındaki düşüş hangi dilimde toplanıyor?")
+    assert follow.answer != first.answer
+    assert "dağılmış" not in follow.answer
+    low = follow.answer.lower()
+    assert "sıralaması mevcut kanıtta yok" in low or "adet olarak hesaplanmadı" in low
+    ok, reasons = validate_response(follow, run)
+    assert ok, reasons
+
+
 def test_limitation_survives_from_report():
     run = run_investigation(FIXTURES / "no_signal.csv", "Satış neden değişti?")
     assert run["investigation_report"]["limitations"]

@@ -220,6 +220,10 @@ input:focus-visible {
   color: var(--color-sidebar-text);
 }
 
+.rail .rail-card select {
+  max-width: 100%;
+}
+
 .rail label {
   color: var(--color-sidebar-muted);
 }

@@ -54,6 +54,17 @@ def test_detail_drill_is_scoped_investigation():
     assert d.intent == "follow_up_investigate"
 
 
+def test_volume_slice_followup_does_not_reinvestigate():
+    d = route_turn(
+        "Sipariş sayısındaki düşüş hangi dilimde toplanıyor?",
+        has_run=True,
+        last_run={"decision": "abstain", "evidence": []},
+        capabilities=CAPS,
+    )
+    assert d.intent == "answer_from_evidence"
+    assert d.reason == "ranking"
+
+
 def test_worst_category_does_not_reinvestigate():
     d = route_turn("En kötü kategori hangisi?", has_run=True, last_run={"evidence": []}, capabilities=CAPS)
     assert d.intent == "answer_from_evidence"

@@ -50,7 +50,9 @@ _EVIDENCE = re.compile(
 _DRILL = re.compile(r"(daha detay|detayl[ıi] incele|incele|g[öo]ster)", re.I)
 _RANKING = re.compile(
     r"(en k[öo]t[üu]|en d[üu][şs][üu]k|en y[üu]ksek|hangi kategori|hangi b[öo]lge|"
-    r"hangi segment|which region|worst category|top region)",
+    r"hangi segment|hangi [şs]ehir|hangi eyalet|hangi dilim|hangi k[ıi]r[ıi]l[ıi]m|"
+    r"which region|worst category|top region|"
+    r"toplan[ıi]yor|yo[ğg]unla[şs]|nerede topland)",
     re.I,
 )
 _CAUSAL_PROBE = re.compile(
